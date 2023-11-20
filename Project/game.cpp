@@ -143,19 +143,59 @@ namespace game {
     }
 
 
+
     void Game::MainLoop(void) {
 
+        float previousVer = 0.0f;
+        float horizontalAngle = 0.0f;
+        float verticalAngle = 0.0f;
+
+       float mouseSpeed = 0.01f;
+
+        double xpos, ypos;
         // Loop while the user did not close the window
         while (!glfwWindowShouldClose(window_)) {
+            glfwGetCursorPos(window_, &xpos, &ypos);
+            glfwSetCursorPos(window_, window_width_g / 2, window_height_g / 2);
+
+            static double last_time = 0;
+            double current_time = glfwGetTime();
+
+            horizontalAngle += mouseSpeed * (current_time - last_time) * float(window_width_g / 2 - xpos);
+            verticalAngle += mouseSpeed * (current_time - last_time) * float(window_height_g / 2 - ypos);
+
+            //printf("x = %.02f, y = %.02f\n", xpos, ypos);
+
             // Animate the scene
             if (animating_) {
                 static double last_time = 0;
                 double current_time = glfwGetTime();
                 if ((current_time - last_time) > 0.01) {
+                    //printf("GetUp(%f, %f, %f)\n", camera_.GetUp().x, camera_.GetUp().y, camera_.GetUp().z);
+                    //printf("horizantalAngle = %.02f, verticalAngle = %.02f\n", horizontalAngle, verticalAngle);
+
+                    camera_.Yaw(glm::radians(horizontalAngle));
+                    if (camera_.GetUp().y > 0.1f) {
+                        camera_.Pitch(glm::radians(verticalAngle));
+                        if (verticalAngle != 0.0f) {
+                            previousVer = verticalAngle;
+                        }
+                    }
+                    else {
+                        if (previousVer < 0 && verticalAngle > 0){
+                            camera_.Pitch(glm::radians(verticalAngle));
+                        }
+                        if (previousVer > 0 && verticalAngle < 0) {
+                            camera_.Pitch(glm::radians(verticalAngle));
+                        }
+                    }
+
                     //scene_.Update();
 
                     // Animate the wall
                     SceneNode* node = scene_.GetNode("CratePlaneInstance1");
+                    glm::quat rotation = glm::angleAxis(glm::pi<float>() / 180.0f, glm::vec3(0.0, 1.0, 0.0));
+                    //node->Rotate(rotation);
                     last_time = current_time;
                 }
             }
@@ -171,6 +211,12 @@ namespace game {
 
             // Update other events like input handling
             glfwPollEvents();
+
+            horizontalAngle = 0.0f;
+            // vertical angle : 0, look at the horizon
+            verticalAngle = 0.0f;
+            
+
         }
     }
 
