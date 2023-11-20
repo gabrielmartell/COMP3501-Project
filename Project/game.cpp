@@ -23,8 +23,8 @@ namespace game {
     float camera_far_clip_distance_g = 1000.0;
     float camera_fov_g = 20.0; // Field-of-view of camera
     const glm::vec3 viewport_background_color_g(0.0, 0.0, 0.0);
-    glm::vec3 camera_position_g(0.5, 1.0, 10.0);
-    glm::vec3 camera_look_at_g(0.0, 0.0, 0.0);
+    glm::vec3 camera_position_g(0.5, 1.0, 9.0);
+    glm::vec3 camera_look_at_g(9.0, 1.0, 0.5);
     glm::vec3 camera_up_g(0.0, 1.0, 0.0);
 
     // Materials 
@@ -113,9 +113,12 @@ namespace game {
 
     void Game::SetupResources(void) {
 
+        //!/ Create the heightMap
+        heightMap = CreateHeightMap(100, -2, 3, glm::vec2(4,4));
+
         //!/ Create geometry of the "Plane"
         //! This function uses these parameters, Object Name, Height Map, Grid Width, Grid Length, Number of Quads
-        resman_.CreatePlaneWithCraters("CraterPlaneMesh", CreateHeightMap(100, -2, 3, glm::vec2(4,4)), 10, 10, 100);
+        resman_.CreatePlaneWithCraters("CraterPlaneMesh", heightMap, 10, 10, 100);
 
         // Create geometry of the "wall"
         resman_.CreateTorus("TorusMesh");
@@ -153,8 +156,6 @@ namespace game {
 
                     // Animate the wall
                     SceneNode* node = scene_.GetNode("CratePlaneInstance1");
-                    glm::quat rotation = glm::angleAxis(glm::pi<float>() / 180.0f, glm::vec3(0.0, 1.0, 0.0));
-                    //node->Rotate(rotation);
                     last_time = current_time;
                 }
             }
@@ -192,24 +193,47 @@ namespace game {
 
         // View control
         float rot_factor(glm::pi<float>() / 180);
-        float trans_factor = 1.0;
+        float trans_factor = 0.1;
+        float yDiff;
+
+        //!/ If statement to watch where the camera is when it is moving
+        if (key == GLFW_KEY_W || key == GLFW_KEY_S || key == GLFW_KEY_A || key == GLFW_KEY_D) {
+             
+            //!/ Calculate the y difference of a position, figuring out if the camera should be lower.
+            float distanceToCraterCenter = (float) sqrt(pow((game->camera_.GetPosition().x - 4), 2) + pow((game->camera_.GetPosition().z - 4), 2));
+            yDiff = game->calculateY(-2, 3, distanceToCraterCenter);
+            //printf("%f", yDiff);
+            //!/ If the camera is inside the crater radius, is should use the yDiff
+            if (distanceToCraterCenter <= 3.0f) {
+               game->camera_.SetPosition(glm::vec3(game->camera_.GetPosition().x, 1.0 + yDiff, game->camera_.GetPosition().z));
+            }
+        }
+        if (key == GLFW_KEY_W) {
+            printf("%f", game->camera_.GetPosition().y - 1.0);
+            if(game->camera_.GetPosition().y - 1.0 >= -1.5){
+                game->camera_.Translate(game->camera_.GetForward() * trans_factor);
+            }
+        }
+        if (key == GLFW_KEY_S) {
+           if(game->camera_.GetPosition().y - 1.0 >= -1.5){
+                game->camera_.Translate(-game->camera_.GetForward() * trans_factor);
+            }
+        }
         if (key == GLFW_KEY_A) {
-            game->camera_.Translate(game->camera_.GetForward() * trans_factor);
+            if(game->camera_.GetPosition().y - 1.0 >= -1.5){
+                game->camera_.Translate(-game->camera_.GetSide() * trans_factor);
+            }
         }
-        if (key == GLFW_KEY_Z) {
-            game->camera_.Translate(-game->camera_.GetForward() * trans_factor);
-        }
-        if (key == GLFW_KEY_J) {
-            game->camera_.Translate(-game->camera_.GetSide() * trans_factor);
+        if (key == GLFW_KEY_D) {
+            if(game->camera_.GetPosition().y - 1.0 >= -1.5){
+                game->camera_.Translate(game->camera_.GetSide() * trans_factor);
+            }
         }
         if (key == GLFW_KEY_L) {
-            game->camera_.Translate(game->camera_.GetSide() * trans_factor);
+            game->camera_.Yaw(-0.1f);
         }
-        if (key == GLFW_KEY_I) {
-            game->camera_.Translate(game->camera_.GetUp() * trans_factor);
-        }
-        if (key == GLFW_KEY_K) {
-            game->camera_.Translate(-game->camera_.GetUp() * trans_factor);
+        if (key == GLFW_KEY_J) {
+            game->camera_.Yaw(0.1f);
         }
     }
 
@@ -316,7 +340,7 @@ namespace game {
                 float distanceToCenter = (float)sqrt(pow((heightX - craterPos.x), 2) + pow((heightZ - craterPos.y), 2));
 
                 //!/ Calculate the y value based off of a cosin wave, 1/2a * cos(pi*x/b) + 1/2c, where c = a, a = craterDepth, b = distanceToCenter
-                float receivedYValue = (0.5 * craterDep) * cos((M_PI * distanceToCenter) / craterRad) + (0.5 * craterDep);
+                float receivedYValue = calculateY(craterDep, craterRad, distanceToCenter);
 
                 //!/ If the distance is closer to to the center
                 if (distanceToCenter <= craterRad) {
@@ -341,6 +365,12 @@ namespace game {
         }
 
         return vertexHeight;
+    }
+
+    //!/ Calculate the Y value
+    //! This function calculates the current y value based on the distance
+    float Game::calculateY(float dep, float rad, float dis){
+        return (0.5 * dep) * cos((M_PI * dis) / rad) + (0.5 * dep);
     }
 
 } // namespace game

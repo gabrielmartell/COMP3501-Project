@@ -54,6 +54,8 @@ namespace game {
             // Camera abstraction
             Camera camera_;
 
+            GLfloat* heightMap;
+
             // Flag to turn animation on/off
             bool animating_;
 
@@ -76,7 +78,8 @@ namespace game {
             SceneNode *CreateInstance(std::string entity_name, std::string object_name, std::string material_name, std::string texture_name = std::string(""));
 
             //!/ Height map function
-            GLfloat* Game::CreateHeightMap(float numQuads, float craterDep, float craterRad, glm::vec2 craterPos);
+            GLfloat* CreateHeightMap(float numQuads, float craterDep, float craterRad, glm::vec2 craterPos);
+            float calculateY(float dep, float rad, float dis);
 
     }; // class Game
 

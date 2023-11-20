@@ -42,7 +42,7 @@ void main()
 
     // Get view direction
     //V = TBN_mat * (eye_position - vertex_position);
-    V = TBN_mat * (- vertex_position); // We already applied the view matrix, so the camera is at the origin
+    V = TBN_mat * (-vertex_position); // We already applied the view matrix, so the camera is at the origin
     V = normalize(V);
     
     // Blinn-Phong specular component
