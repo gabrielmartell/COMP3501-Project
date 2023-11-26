@@ -114,11 +114,11 @@ namespace game {
     void Game::SetupResources(void) {
 
         //!/ Create the heightMap
-        heightMap = CreateHeightMap(100, -2, 3, glm::vec2(4,4));
+        heightMap = CreateHeightMap(10, 20, 0, 3, glm::vec2(4,4));
 
         //!/ Create geometry of the "Plane"
         //! This function uses these parameters, Object Name, Height Map, Grid Width, Grid Length, Number of Quads
-        resman_.CreatePlaneWithCraters("CraterPlaneMesh", heightMap, 10, 10, 100);
+        resman_.CreatePlaneWithCraters("CraterPlaneMesh", heightMap, 10, 20, 10, 20);
 
         // Create geometry of the "wall"
         resman_.CreateTorus("TorusMesh");
@@ -369,11 +369,9 @@ namespace game {
     //!/ Create the height map
     //! This function uses these parameters, Number of Quads, Crater Depth, Crater Rad, Crater Position
     //! This function could be easily changed to include number of craters to allow for more craters to be added.
-    GLfloat* Game::CreateHeightMap(float numQuads, float craterDep, float craterRad, glm::vec2 craterPos) {
+    GLfloat* Game::CreateHeightMap(int v_gWidth, int v_gLength, float craterDep, float craterRad, glm::vec2 craterPos) {
 
         //!/ Quad Settings and variables
-        int v_gWidth = sqrt(numQuads) + 1;
-        int v_gLength = sqrt(numQuads) + 1;
 
         //!/ Height Array
         GLfloat* vertexHeight = new GLfloat[v_gWidth * v_gLength];

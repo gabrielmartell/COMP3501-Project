@@ -795,17 +795,16 @@ void ResourceManager::CreatePlane(std::string object_name) {
 }
 
 //!/ Function to create plane with craters
-void ResourceManager::CreatePlaneWithCraters(std::string object_name, GLfloat* heightMap, int gridWidth, int gridHeight, int numQuads) {
+void ResourceManager::CreatePlaneWithCraters(std::string object_name, GLfloat* heightMap, float gridWidth, float gridHeight, int v_gridWidth, int v_gridLength) {
     // Definition of the plane (a simple square in the XZ plane)
 
     //!/ Quad Settings and variables
-    int v_gridWidth = sqrt(numQuads) + 1;
-    int v_gridLength = sqrt(numQuads) + 1;
+    int numQuads = (v_gridWidth - 1) * (v_gridLength - 1);
    
     //!/ Number of vertices and faces to be created
     //!/ Number of vertices must follow the amount of quads
     //!/ Number of faces are pairs of each quad
-	const GLuint vertex_num = (numQuads + 1) * (numQuads + 1); 
+	const GLuint vertex_num = v_gridWidth * v_gridLength; 
     const GLuint face_num = numQuads * 2;
 
     //!/ Number of attributes for vertices and faces

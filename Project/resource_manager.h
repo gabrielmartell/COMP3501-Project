@@ -37,7 +37,7 @@ namespace game {
             void CreateSphere(std::string object_name, float radius = 0.6, int num_samples_theta = 90, int num_samples_phi = 45);
             void CreateWall(std::string object_name);
             void CreatePlane(std::string object_name);
-            void CreatePlaneWithCraters(std::string object_name, GLfloat* heightMap, int gridWidth, int gridHeight, int numQuads);
+            void CreatePlaneWithCraters(std::string object_name, GLfloat* heightMap, float gridWidth, float gridHeight, int v_gridWidth, int v_gridLength);
 
         private:
             // List storing all resources

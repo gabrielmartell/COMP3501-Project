@@ -1,7 +1,7 @@
-.vs
-path_config.h
-out
-CMakeLists.txt
+Project/.vs
+Project/path_config.h
+Project/out
+#Project/CMakeLists.txt
 
 # Prerequisites
 *.d
