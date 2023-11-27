@@ -27,6 +27,12 @@ namespace game {
     glm::vec3 camera_look_at_g(9.0, 1.0, 0.5);
     glm::vec3 camera_up_g(0.0, 1.0, 0.0);
 
+    //Switching to Arrow Key Movement
+    bool upPressed = false;
+    bool downPressed = false;
+    bool leftPressed = false;
+    bool rightPressed = false;
+
     // Materials 
     const std::string material_directory_g = MATERIAL_DIRECTORY;
 
@@ -150,55 +156,67 @@ namespace game {
         float horizontalAngle = 0.0f;
         float verticalAngle = 0.0f;
 
-       float mouseSpeed = 0.01f;
+        //Even though I call it mouse speed like a dummy
+        //This actually controls the sens for arrow key head movement
+        float mouseSpeed = 40.0f;
+        
+        float maxVerticalAngle = glm::radians(85.0f);
 
-        double xpos, ypos;
+        //double xpos, ypos;
+        //double lastX = window_width_g / 2.0, lastY = window_height_g / 2.0;
+
+
+
+
         // Loop while the user did not close the window
         while (!glfwWindowShouldClose(window_)) {
-            glfwGetCursorPos(window_, &xpos, &ypos);
-            glfwSetCursorPos(window_, window_width_g / 2, window_height_g / 2);
-
-            static double last_time = 0;
+            static double last_time = glfwGetTime();
             double current_time = glfwGetTime();
+            double deltaTime = current_time - last_time;
 
-            horizontalAngle += mouseSpeed * (current_time - last_time) * float(window_width_g / 2 - xpos);
-            verticalAngle += mouseSpeed * (current_time - last_time) * float(window_height_g / 2 - ypos);
 
             //printf("x = %.02f, y = %.02f\n", xpos, ypos);
 
             // Animate the scene
-            if (animating_) {
-                static double last_time = 0;
-                double current_time = glfwGetTime();
-                if ((current_time - last_time) > 0.01) {
-                    //printf("GetUp(%f, %f, %f)\n", camera_.GetUp().x, camera_.GetUp().y, camera_.GetUp().z);
-                    //printf("horizantalAngle = %.02f, verticalAngle = %.02f\n", horizontalAngle, verticalAngle);
 
-                    camera_.Yaw(glm::radians(horizontalAngle));
-                    if (camera_.GetUp().y > 0.1f) {
-                        camera_.Pitch(glm::radians(verticalAngle));
-                        if (verticalAngle != 0.0f) {
-                            previousVer = verticalAngle;
-                        }
-                    }
-                    else {
-                        if (previousVer < 0 && verticalAngle > 0){
-                            camera_.Pitch(glm::radians(verticalAngle));
-                        }
-                        if (previousVer > 0 && verticalAngle < 0) {
-                            camera_.Pitch(glm::radians(verticalAngle));
-                        }
-                    }
 
-                    //scene_.Update();
+            if ((deltaTime) > 0.01) {
+                //printf("GetUp(%f, %f, %f)\n", camera_.GetUp().x, camera_.GetUp().y, camera_.GetUp().z);
+                //printf("horizantalAngle = %.02f, verticalAngle = %.02f\n", horizontalAngle, verticalAngle);
 
-                    // Animate the wall
-                    SceneNode* node = scene_.GetNode("CratePlaneInstance1");
-                    glm::quat rotation = glm::angleAxis(glm::pi<float>() / 180.0f, glm::vec3(0.0, 1.0, 0.0));
-                    //node->Rotate(rotation);
-                    last_time = current_time;
+                if (upPressed) {
+                    verticalAngle += mouseSpeed * deltaTime;
+                    printf("Vertical Angle: %f\n", verticalAngle);
                 }
+                if (downPressed) {
+                    verticalAngle -= mouseSpeed * deltaTime;
+                }
+                if (leftPressed) {
+                    horizontalAngle += mouseSpeed * deltaTime;
+                }
+                if (rightPressed) {
+                    horizontalAngle -= mouseSpeed * deltaTime;
+                }
+
+                //Angle Clamp
+                verticalAngle = std::max(std::min(verticalAngle, maxVerticalAngle), -maxVerticalAngle);
+
+                camera_.Yaw(glm::radians(horizontalAngle));
+                camera_.Pitch(glm::radians(verticalAngle));
+
+                //horizontalAngle = 0.0f;
+                //verticalAngle = 0.0f;
+
+
+                //scene_.Update();
+
+                // Animate the wall
+                SceneNode* node = scene_.GetNode("GameMapInstance1");
+                glm::quat rotation = glm::angleAxis(glm::pi<float>() / 180.0f, glm::vec3(0.0, 1.0, 0.0));
+                //node->Rotate(rotation);
+                last_time = current_time;
             }
+
 
             // Snap player to the heightmap
             // interpolated height value
@@ -215,7 +233,7 @@ namespace game {
             horizontalAngle = 0.0f;
             // vertical angle : 0, look at the horizon
             verticalAngle = 0.0f;
-            
+
 
         }
     }
@@ -243,35 +261,35 @@ namespace game {
         float yDiff;
 
         //!/ If statement to watch where the camera is when it is moving
-        if (key == GLFW_KEY_W || key == GLFW_KEY_S || key == GLFW_KEY_A || key == GLFW_KEY_D) {
-             
-            //!/ Calculate the y difference of a position, figuring out if the camera should be lower.
-            float distanceToCraterCenter = (float) sqrt(pow((game->camera_.GetPosition().x - 4), 2) + pow((game->camera_.GetPosition().z - 4), 2));
-            yDiff = game->calculateY(-2, 3, distanceToCraterCenter);
-            //printf("%f", yDiff);
-            //!/ If the camera is inside the crater radius, is should use the yDiff
-            if (distanceToCraterCenter <= 3.0f) {
-               game->camera_.SetPosition(glm::vec3(game->camera_.GetPosition().x, 1.0 + yDiff, game->camera_.GetPosition().z));
-            }
-        }
+        //if (key == GLFW_KEY_W || key == GLFW_KEY_S || key == GLFW_KEY_A || key == GLFW_KEY_D) {
+        //     
+        //    //!/ Calculate the y difference of a position, figuring out if the camera should be lower.
+        //    float distanceToCraterCenter = (float) sqrt(pow((game->camera_.GetPosition().x - 4), 2) + pow((game->camera_.GetPosition().z - 4), 2));
+        //    yDiff = game->calculateY(-2, 3, distanceToCraterCenter);
+        //    //printf("%f", yDiff);
+        //    //!/ If the camera is inside the crater radius, is should use the yDiff
+        //    if (distanceToCraterCenter <= 3.0f) {
+        //       game->camera_.SetPosition(glm::vec3(game->camera_.GetPosition().x, 1.0 + yDiff, game->camera_.GetPosition().z));
+        //    }
+        //}
         if (key == GLFW_KEY_W) {
             printf("%f", game->camera_.GetPosition().y - 1.0);
-            if(game->camera_.GetPosition().y - 1.0 >= -1.5){
+            if (game->camera_.GetPosition().y - 1.0 >= -1.5) {
                 game->camera_.Translate(game->camera_.GetForward() * trans_factor);
             }
         }
         if (key == GLFW_KEY_S) {
-           if(game->camera_.GetPosition().y - 1.0 >= -1.5){
+            if (game->camera_.GetPosition().y - 1.0 >= -1.5) {
                 game->camera_.Translate(-game->camera_.GetForward() * trans_factor);
             }
         }
         if (key == GLFW_KEY_A) {
-            if(game->camera_.GetPosition().y - 1.0 >= -1.5){
+            if (game->camera_.GetPosition().y - 1.0 >= -1.5) {
                 game->camera_.Translate(-game->camera_.GetSide() * trans_factor);
             }
         }
         if (key == GLFW_KEY_D) {
-            if(game->camera_.GetPosition().y - 1.0 >= -1.5){
+            if (game->camera_.GetPosition().y - 1.0 >= -1.5) {
                 game->camera_.Translate(game->camera_.GetSide() * trans_factor);
             }
         }
@@ -281,7 +299,24 @@ namespace game {
         if (key == GLFW_KEY_J) {
             game->camera_.Yaw(0.1f);
         }
+
+        if (key == GLFW_KEY_UP) {
+            upPressed = (action != GLFW_RELEASE);
+            //printf("Up Pressed\n");
+        }
+        if (key == GLFW_KEY_DOWN) {
+            downPressed = (action != GLFW_RELEASE);
+        }
+        if (key == GLFW_KEY_LEFT) {
+            leftPressed = (action != GLFW_RELEASE);
+        }
+        if (key == GLFW_KEY_RIGHT) {
+            rightPressed = (action != GLFW_RELEASE);
+        }
+
+
     }
+
 
 
     void Game::ResizeCallback(GLFWwindow* window, int width, int height) {
