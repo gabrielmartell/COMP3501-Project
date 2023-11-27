@@ -114,7 +114,7 @@ namespace game {
     void Game::SetupResources(void) {
 
         //!/ Create the heightMap
-        heightMap = CreateHeightMap(10, 20, 0, 3, glm::vec2(4,4));
+        heightMap = CreateHeightMap(10, 20, 3.0);
 
         //!/ Create geometry of the "Plane"
         //! This function uses these parameters, Object Name, Height Map, Grid Width, Grid Length, Number of Quads
@@ -369,9 +369,7 @@ namespace game {
     //!/ Create the height map
     //! This function uses these parameters, Number of Quads, Crater Depth, Crater Rad, Crater Position
     //! This function could be easily changed to include number of craters to allow for more craters to be added.
-    GLfloat* Game::CreateHeightMap(int v_gWidth, int v_gLength, float craterDep, float craterRad, glm::vec2 craterPos) {
-
-        //!/ Quad Settings and variables
+    GLfloat* Game::CreateHeightMap(int v_gWidth, int v_gLength, float hillHeight) {
 
         //!/ Height Array
         GLfloat* vertexHeight = new GLfloat[v_gWidth * v_gLength];
@@ -380,30 +378,28 @@ namespace game {
         for (int heightX = 0; heightX < v_gWidth; heightX++) {
             for (int heightZ = 0; heightZ < v_gLength; heightZ++) {
 
-                //!/ Calculate the distance to the center of the crater
-                float distanceToCenter = (float)sqrt(pow((heightX - craterPos.x), 2) + pow((heightZ - craterPos.y), 2));
+                //!/ If statement to divide the map into 3 sections, hill, slope and field
+                if (heightX <= (v_gWidth / 3)) {
+					vertexHeight[heightZ + (heightX * v_gLength)] = 3.0;
+					printf("%.2f  ", hillHeight);
+				}
+				else if (heightX <= (v_gWidth * 2 / 3)) {
+					if (heightZ <= (v_gLength * 1 / 2)) {
+						float newY = hillHeight * cos((M_PI / fabs(v_gWidth * 2 / 3)) * heightX);
 
-                //!/ Calculate the y value based off of a cosin wave, 1/2a * cos(pi*x/b) + 1/2c, where c = a, a = craterDepth, b = distanceToCenter
-                float receivedYValue = calculateY(craterDep, craterRad, distanceToCenter);
+						vertexHeight[heightZ + (heightX * v_gLength)] = hillHeight + newY;
+						printf("%.2f  ", hillHeight + newY);
+					}
+					else {
+						vertexHeight[heightZ + (heightX * v_gLength)] = 0.0;
+						printf("%.2f  ", 0.0f);
+					}
+				}
+				else {
+					vertexHeight[heightZ + (heightX * v_gLength)] = 0.0;
+					printf("%.2f  ", 0.0f);
+				}
 
-                //!/ If the distance is closer to to the center
-                if (distanceToCenter <= craterRad) {
-                    //!/ If the height value received is smaller than 0, it is correct
-                    if ((receivedYValue) < 0) {
-                        vertexHeight[heightZ + (heightX * v_gLength)] = receivedYValue;
-                        printf("%.2f  ", receivedYValue);
-                    }
-                    else {
-                        //!/ If the value is larger than 0, it should be 0
-                        vertexHeight[heightZ + (heightX * v_gLength)] = 0;
-                        printf("%.2f  ", 0.0f);
-                    }
-                }
-                else {
-                    //!/ If not, the value should be 0 and the vertex flat
-                    vertexHeight[heightZ + (heightX * v_gLength)] = 0;
-                    printf("%.2f  ", 0.0f);
-                }
             }
             printf("\n");
         }
