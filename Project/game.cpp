@@ -32,6 +32,7 @@ namespace game {
     bool downPressed = false;
     bool leftPressed = false;
     bool rightPressed = false;
+    bool usingMouseCamera = false;
 
     // Materials 
     const std::string material_directory_g = MATERIAL_DIRECTORY;
@@ -152,87 +153,153 @@ namespace game {
 
     void Game::MainLoop(void) {
 
+        //Vars that both Mouse and Arrows need
         float previousVer = 0.0f;
         float horizontalAngle = 0.0f;
         float verticalAngle = 0.0f;
 
-        //Even though I call it mouse speed like a dummy
-        //This actually controls the sens for arrow key head movement
-        float mouseSpeed = 40.0f;
-        
+        //Vars that Arrows need
+        float arrowSpeed = 40.0f;
         float maxVerticalAngle = glm::radians(85.0f);
 
-        //double xpos, ypos;
+        //Vars that Mouse needs
+        double xpos, ypos;
         //double lastX = window_width_g / 2.0, lastY = window_height_g / 2.0;
+        float mouseSpeed = 0.01f;
 
 
 
 
         // Loop while the user did not close the window
         while (!glfwWindowShouldClose(window_)) {
-            static double last_time = glfwGetTime();
-            double current_time = glfwGetTime();
-            double deltaTime = current_time - last_time;
+            if (usingMouseCamera) {
+                glfwGetCursorPos(window_, &xpos, &ypos);
+                glfwSetCursorPos(window_, window_width_g / 2, window_height_g / 2);
 
+                static double last_time = 0;
+                double current_time = glfwGetTime();
 
-            //printf("x = %.02f, y = %.02f\n", xpos, ypos);
+                horizontalAngle += mouseSpeed * (current_time - last_time) * float(window_width_g / 2 - xpos);
+                verticalAngle += mouseSpeed * (current_time - last_time) * float(window_height_g / 2 - ypos);
 
-            // Animate the scene
+                //printf("x = %.02f, y = %.02f\n", xpos, ypos);
 
+                // Animate the scene
+                if (animating_) {
+                    static double last_time = 0;
+                    double current_time = glfwGetTime();
+                    if ((current_time - last_time) > 0.01) {
+                        //printf("GetUp(%f, %f, %f)\n", camera_.GetUp().x, camera_.GetUp().y, camera_.GetUp().z);
+                        //printf("horizantalAngle = %.02f, verticalAngle = %.02f\n", horizontalAngle, verticalAngle);
 
-            if ((deltaTime) > 0.01) {
-                //printf("GetUp(%f, %f, %f)\n", camera_.GetUp().x, camera_.GetUp().y, camera_.GetUp().z);
-                //printf("horizantalAngle = %.02f, verticalAngle = %.02f\n", horizontalAngle, verticalAngle);
+                        camera_.Yaw(glm::radians(horizontalAngle));
+                        if (camera_.GetUp().y > 0.1f) {
+                            camera_.Pitch(glm::radians(verticalAngle));
+                            if (verticalAngle != 0.0f) {
+                                previousVer = verticalAngle;
+                            }
+                        }
+                        else {
+                            if (previousVer < 0 && verticalAngle > 0) {
+                                camera_.Pitch(glm::radians(verticalAngle));
+                            }
+                            if (previousVer > 0 && verticalAngle < 0) {
+                                camera_.Pitch(glm::radians(verticalAngle));
+                            }
+                        }
 
-                if (upPressed) {
-                    verticalAngle += mouseSpeed * deltaTime;
-                    printf("Vertical Angle: %f\n", verticalAngle);
+                        //scene_.Update();
+
+                        // Animate the wall
+                        SceneNode* node = scene_.GetNode("CratePlaneInstance1");
+                        glm::quat rotation = glm::angleAxis(glm::pi<float>() / 180.0f, glm::vec3(0.0, 1.0, 0.0));
+                        //node->Rotate(rotation);
+                        last_time = current_time;
+                    }
                 }
-                if (downPressed) {
-                    verticalAngle -= mouseSpeed * deltaTime;
-                }
-                if (leftPressed) {
-                    horizontalAngle += mouseSpeed * deltaTime;
-                }
-                if (rightPressed) {
-                    horizontalAngle -= mouseSpeed * deltaTime;
-                }
 
-                //Angle Clamp
-                verticalAngle = std::max(std::min(verticalAngle, maxVerticalAngle), -maxVerticalAngle);
+                // Snap player to the heightmap
+                // interpolated height value
 
-                camera_.Yaw(glm::radians(horizontalAngle));
-                camera_.Pitch(glm::radians(verticalAngle));
+                // Draw the scene
+                scene_.Draw(&camera_);
 
-                //horizontalAngle = 0.0f;
-                //verticalAngle = 0.0f;
+                // Push buffer drawn in the background onto the display
+                glfwSwapBuffers(window_);
 
+                // Update other events like input handling
+                glfwPollEvents();
 
-                //scene_.Update();
-
-                // Animate the wall
-                SceneNode* node = scene_.GetNode("GameMapInstance1");
-                glm::quat rotation = glm::angleAxis(glm::pi<float>() / 180.0f, glm::vec3(0.0, 1.0, 0.0));
-                //node->Rotate(rotation);
-                last_time = current_time;
+                horizontalAngle = 0.0f;
+                // vertical angle : 0, look at the horizon
+                verticalAngle = 0.0f;
             }
+            else {
+                static double last_time = glfwGetTime();
+                double current_time = glfwGetTime();
+                double deltaTime = current_time - last_time;
 
 
-            // Snap player to the heightmap
-            // interpolated height value
+                //printf("x = %.02f, y = %.02f\n", xpos, ypos);
 
-            // Draw the scene
-            scene_.Draw(&camera_);
+                // Animate the scene
 
-            // Push buffer drawn in the background onto the display
-            glfwSwapBuffers(window_);
 
-            // Update other events like input handling
-            glfwPollEvents();
+                if ((deltaTime) > 0.01) {
+                    //printf("GetUp(%f, %f, %f)\n", camera_.GetUp().x, camera_.GetUp().y, camera_.GetUp().z);
+                    //printf("horizantalAngle = %.02f, verticalAngle = %.02f\n", horizontalAngle, verticalAngle);
 
-            horizontalAngle = 0.0f;
-            // vertical angle : 0, look at the horizon
-            verticalAngle = 0.0f;
+                    if (upPressed) {
+                        verticalAngle += arrowSpeed * deltaTime;
+                        printf("Vertical Angle: %f\n", verticalAngle);
+                    }
+                    if (downPressed) {
+                        verticalAngle -= arrowSpeed * deltaTime;
+                    }
+                    if (leftPressed) {
+                        horizontalAngle += arrowSpeed * deltaTime;
+                    }
+                    if (rightPressed) {
+                        horizontalAngle -= arrowSpeed * deltaTime;
+                    }
+
+                    //Angle Clamp
+                    verticalAngle = std::max(std::min(verticalAngle, maxVerticalAngle), -maxVerticalAngle);
+
+                    camera_.Yaw(glm::radians(horizontalAngle));
+                    camera_.Pitch(glm::radians(verticalAngle));
+
+                    //horizontalAngle = 0.0f;
+                    //verticalAngle = 0.0f;
+
+
+                    //scene_.Update();
+
+                    // Animate the wall
+                    SceneNode* node = scene_.GetNode("GameMapInstance1");
+                    glm::quat rotation = glm::angleAxis(glm::pi<float>() / 180.0f, glm::vec3(0.0, 1.0, 0.0));
+                    //node->Rotate(rotation);
+                    last_time = current_time;
+                }
+
+
+                // Snap player to the heightmap
+                // interpolated height value
+
+                // Draw the scene
+                scene_.Draw(&camera_);
+
+                // Push buffer drawn in the background onto the display
+                glfwSwapBuffers(window_);
+
+                // Update other events like input handling
+                glfwPollEvents();
+
+                horizontalAngle = 0.0f;
+                // vertical angle : 0, look at the horizon
+                verticalAngle = 0.0f;
+            }
+            
 
 
         }
@@ -244,6 +311,8 @@ namespace game {
         // Get user data with a pointer to the game class
         void* ptr = glfwGetWindowUserPointer(window);
         Game* game = (Game*)ptr;
+        double lastToggleTime = 0.0;
+        const double toggleDelay = 0.5;
 
         // Quit game if 'q' is pressed
         if (key == GLFW_KEY_Q && action == GLFW_PRESS) {
@@ -300,18 +369,29 @@ namespace game {
             game->camera_.Yaw(0.1f);
         }
 
-        if (key == GLFW_KEY_UP) {
+        if (key == GLFW_KEY_UP && !usingMouseCamera) {
             upPressed = (action != GLFW_RELEASE);
-            //printf("Up Pressed\n");
+            //
         }
-        if (key == GLFW_KEY_DOWN) {
+        if (key == GLFW_KEY_DOWN && !usingMouseCamera) {
             downPressed = (action != GLFW_RELEASE);
         }
-        if (key == GLFW_KEY_LEFT) {
+        if (key == GLFW_KEY_LEFT && !usingMouseCamera) {
             leftPressed = (action != GLFW_RELEASE);
         }
-        if (key == GLFW_KEY_RIGHT) {
+        if (key == GLFW_KEY_RIGHT && !usingMouseCamera) {
             rightPressed = (action != GLFW_RELEASE);
+        }
+        //Caps lock will switch from Arrow-Key Camera to Mouse-Camera
+        //Default will be Arrow Key
+        //Caps Lock as the button can be swapped out
+        if (key == GLFW_KEY_CAPS_LOCK && action == GLFW_PRESS) {
+            double currentTime = glfwGetTime(); 
+            if (currentTime - lastToggleTime > toggleDelay) {
+                usingMouseCamera = !usingMouseCamera;
+                printf("usingMouseCamera: %d\n", usingMouseCamera);
+                lastToggleTime = currentTime; 
+            }
         }
 
 
