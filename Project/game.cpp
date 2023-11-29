@@ -23,7 +23,7 @@ namespace game {
     float camera_far_clip_distance_g = 1000.0;
     float camera_fov_g = 20.0; // Field-of-view of camera
     const glm::vec3 viewport_background_color_g(0.0, 0.0, 0.0);
-    glm::vec3 camera_position_g(0.5, 1.0, 9.0);
+    glm::vec3 camera_position_g(30.0, 1.0, 9.0);
     glm::vec3 camera_look_at_g(9.0, 1.0, 0.5);
     glm::vec3 camera_up_g(0.0, 1.0, 0.0);
 
@@ -125,7 +125,7 @@ namespace game {
 
         //!/ Create geometry of the "Plane"
         //! This function uses these parameters, Object Name, Height Map, Grid Width, Grid Length, Number of Quads
-        resman_.CreatePlaneWithCraters("CraterPlaneMesh", heightMap, 10, 20, 10, 20);
+        resman_.CreatePlaneWithCraters("CraterPlaneMesh", heightMap, 50, 100, 10, 20);
 
         // Create geometry of the "wall"
         resman_.CreateTorus("TorusMesh");
@@ -391,6 +391,11 @@ namespace game {
                 usingMouseCamera = !usingMouseCamera;
                 printf("usingMouseCamera: %d\n", usingMouseCamera);
                 lastToggleTime = currentTime; 
+            }
+        }
+        if (key == GLFW_KEY_SPACE) {
+            if (game->camera_.GetPosition().y - 1.0 >= -1.5) {
+                game->camera_.Translate(game->camera_.GetUp() * trans_factor);
             }
         }
 
