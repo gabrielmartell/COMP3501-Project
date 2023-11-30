@@ -125,7 +125,7 @@ namespace game {
 
         //!/ Create geometry of the "Plane"
         //! This function uses these parameters, Object Name, Height Map, Grid Width, Grid Length, Number of Quads
-        resman_.CreatePlaneWithCraters("CraterPlaneMesh", heightMap, 50, 100, 10, 20);
+        resman_.CreatePlaneWithCraters("GameMapMesh", heightMap, 50, 100, 10, 20);
 
         // Create geometry of the "wall"
         resman_.CreateTorus("TorusMesh");
@@ -145,8 +145,8 @@ namespace game {
         // Set background color for the scene
         scene_.SetBackgroundColor(viewport_background_color_g);
 
-        // Create an instance of the wall
-        game::SceneNode* wall = CreateInstance("CratePlaneInstance1", "CraterPlaneMesh", "NormalMapMaterial", "NormalMap");
+        // Create an instance of the map
+        game::SceneNode* map = CreateInstance("MapInstance1", "GameMapMesh", "NormalMapMaterial", "NormalMap");
     }
 
 
@@ -167,27 +167,23 @@ namespace game {
         //double lastX = window_width_g / 2.0, lastY = window_height_g / 2.0;
         float mouseSpeed = 0.01f;
 
-
-
-
         // Loop while the user did not close the window
         while (!glfwWindowShouldClose(window_)) {
+
+            //!/ If mouse movement is active
             if (usingMouseCamera) {
+
+				static double last_time = 0;
+				double current_time = glfwGetTime();
+
                 glfwGetCursorPos(window_, &xpos, &ypos);
                 glfwSetCursorPos(window_, window_width_g / 2, window_height_g / 2);
-
-                static double last_time = 0;
-                double current_time = glfwGetTime();
 
                 horizontalAngle += mouseSpeed * (current_time - last_time) * float(window_width_g / 2 - xpos);
                 verticalAngle += mouseSpeed * (current_time - last_time) * float(window_height_g / 2 - ypos);
 
-                //printf("x = %.02f, y = %.02f\n", xpos, ypos);
-
                 // Animate the scene
                 if (animating_) {
-                    static double last_time = 0;
-                    double current_time = glfwGetTime();
                     if ((current_time - last_time) > 0.01) {
                         //printf("GetUp(%f, %f, %f)\n", camera_.GetUp().x, camera_.GetUp().y, camera_.GetUp().z);
                         //printf("horizantalAngle = %.02f, verticalAngle = %.02f\n", horizontalAngle, verticalAngle);
@@ -210,16 +206,13 @@ namespace game {
 
                         //scene_.Update();
 
-                        // Animate the wall
-                        SceneNode* node = scene_.GetNode("CratePlaneInstance1");
+                        // Animate the map
+                        SceneNode* node = scene_.GetNode("MapInstance1");
                         glm::quat rotation = glm::angleAxis(glm::pi<float>() / 180.0f, glm::vec3(0.0, 1.0, 0.0));
                         //node->Rotate(rotation);
                         last_time = current_time;
                     }
                 }
-
-                // Snap player to the heightmap
-                // interpolated height value
 
                 // Draw the scene
                 scene_.Draw(&camera_);
@@ -235,53 +228,19 @@ namespace game {
                 verticalAngle = 0.0f;
             }
             else {
-                static double last_time = glfwGetTime();
-                double current_time = glfwGetTime();
-                double deltaTime = current_time - last_time;
 
+				// Animate the scene
+				if (animating_) {
+					static double last_time = 0;
+					double current_time = glfwGetTime();
+					if ((current_time - last_time) > 0.01) {
+						//scene_.Update();
 
-                //printf("x = %.02f, y = %.02f\n", xpos, ypos);
-
-                // Animate the scene
-
-
-                if ((deltaTime) > 0.01) {
-                    //printf("GetUp(%f, %f, %f)\n", camera_.GetUp().x, camera_.GetUp().y, camera_.GetUp().z);
-                    //printf("horizantalAngle = %.02f, verticalAngle = %.02f\n", horizontalAngle, verticalAngle);
-
-                    if (upPressed) {
-                        verticalAngle += arrowSpeed * deltaTime;
-                        printf("Vertical Angle: %f\n", verticalAngle);
-                    }
-                    if (downPressed) {
-                        verticalAngle -= arrowSpeed * deltaTime;
-                    }
-                    if (leftPressed) {
-                        horizontalAngle += arrowSpeed * deltaTime;
-                    }
-                    if (rightPressed) {
-                        horizontalAngle -= arrowSpeed * deltaTime;
-                    }
-
-                    //Angle Clamp
-                    verticalAngle = std::max(std::min(verticalAngle, maxVerticalAngle), -maxVerticalAngle);
-
-                    camera_.Yaw(glm::radians(horizontalAngle));
-                    camera_.Pitch(glm::radians(verticalAngle));
-
-                    //horizontalAngle = 0.0f;
-                    //verticalAngle = 0.0f;
-
-
-                    //scene_.Update();
-
-                    // Animate the wall
-                    SceneNode* node = scene_.GetNode("GameMapInstance1");
-                    glm::quat rotation = glm::angleAxis(glm::pi<float>() / 180.0f, glm::vec3(0.0, 1.0, 0.0));
-                    //node->Rotate(rotation);
-                    last_time = current_time;
-                }
-
+						// Animate the wall
+						SceneNode* node = scene_.GetNode("MapInstance1");
+						last_time = current_time;
+					}
+				}
 
                 // Snap player to the heightmap
                 // interpolated height value
@@ -299,9 +258,6 @@ namespace game {
                 // vertical angle : 0, look at the horizon
                 verticalAngle = 0.0f;
             }
-            
-
-
         }
     }
 
@@ -324,23 +280,11 @@ namespace game {
             game->animating_ = (game->animating_ == true) ? false : true;
         }
 
-        // View control
+        //!/ View control
         float rot_factor(glm::pi<float>() / 180);
         float trans_factor = 0.1;
-        float yDiff;
 
-        //!/ If statement to watch where the camera is when it is moving
-        //if (key == GLFW_KEY_W || key == GLFW_KEY_S || key == GLFW_KEY_A || key == GLFW_KEY_D) {
-        //     
-        //    //!/ Calculate the y difference of a position, figuring out if the camera should be lower.
-        //    float distanceToCraterCenter = (float) sqrt(pow((game->camera_.GetPosition().x - 4), 2) + pow((game->camera_.GetPosition().z - 4), 2));
-        //    yDiff = game->calculateY(-2, 3, distanceToCraterCenter);
-        //    //printf("%f", yDiff);
-        //    //!/ If the camera is inside the crater radius, is should use the yDiff
-        //    if (distanceToCraterCenter <= 3.0f) {
-        //       game->camera_.SetPosition(glm::vec3(game->camera_.GetPosition().x, 1.0 + yDiff, game->camera_.GetPosition().z));
-        //    }
-        //}
+        //!/ WASD movment
         if (key == GLFW_KEY_W) {
             printf("%f", game->camera_.GetPosition().y - 1.0);
             if (game->camera_.GetPosition().y - 1.0 >= -1.5) {
@@ -362,29 +306,22 @@ namespace game {
                 game->camera_.Translate(game->camera_.GetSide() * trans_factor);
             }
         }
-        if (key == GLFW_KEY_L) {
-            game->camera_.Yaw(-0.1f);
-        }
-        if (key == GLFW_KEY_J) {
-            game->camera_.Yaw(0.1f);
-        }
 
+        //!/ Camera control
         if (key == GLFW_KEY_UP && !usingMouseCamera) {
-            upPressed = (action != GLFW_RELEASE);
-            //
+			game->camera_.Pitch(rot_factor);
         }
         if (key == GLFW_KEY_DOWN && !usingMouseCamera) {
-            downPressed = (action != GLFW_RELEASE);
+			game->camera_.Pitch(-rot_factor);
         }
         if (key == GLFW_KEY_LEFT && !usingMouseCamera) {
-            leftPressed = (action != GLFW_RELEASE);
+			game->camera_.Yaw(rot_factor);
         }
         if (key == GLFW_KEY_RIGHT && !usingMouseCamera) {
-            rightPressed = (action != GLFW_RELEASE);
+			game->camera_.Yaw(-rot_factor);
         }
-        //Caps lock will switch from Arrow-Key Camera to Mouse-Camera
-        //Default will be Arrow Key
-        //Caps Lock as the button can be swapped out
+
+        //!/ Caps lock button to change mode of camera: Mouse vs Tank
         if (key == GLFW_KEY_CAPS_LOCK && action == GLFW_PRESS) {
             double currentTime = glfwGetTime(); 
             if (currentTime - lastToggleTime > toggleDelay) {
@@ -393,15 +330,14 @@ namespace game {
                 lastToggleTime = currentTime; 
             }
         }
+        
+        //!/ Space button to create upwards movment
         if (key == GLFW_KEY_SPACE) {
             if (game->camera_.GetPosition().y - 1.0 >= -1.5) {
                 game->camera_.Translate(game->camera_.GetUp() * trans_factor);
             }
         }
-
-
     }
-
 
 
     void Game::ResizeCallback(GLFWwindow* window, int width, int height) {
@@ -525,12 +461,6 @@ namespace game {
         }
 
         return vertexHeight;
-    }
-
-    //!/ Calculate the Y value
-    //! This function calculates the current y value based on the distance
-    float Game::calculateY(float dep, float rad, float dis){
-        return (0.5 * dep) * cos((M_PI * dis) / rad) + (0.5 * dep);
     }
 
 } // namespace game

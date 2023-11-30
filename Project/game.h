@@ -79,7 +79,6 @@ namespace game {
 
             //!/ Height map function
             GLfloat* CreateHeightMap(int v_gWidth, int v_gLength, float hillHeight);
-            float calculateY(float dep, float rad, float dis);
 
     }; // class Game
 
