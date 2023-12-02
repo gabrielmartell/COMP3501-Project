@@ -3,6 +3,7 @@
 #include <time.h>
 #include <sstream>
 #include <cmath>
+#include <random>
 
 #include "game.h"
 #include "path_config.h"
@@ -21,7 +22,7 @@ namespace game {
     // Viewport and camera settings
     float camera_near_clip_distance_g = 0.01;
     float camera_far_clip_distance_g = 1000.0;
-    float camera_fov_g = 20.0; // Field-of-view of camera
+    float camera_fov_g = 90.0; // Field-of-view of camera
     const glm::vec3 viewport_background_color_g(0.0, 0.0, 0.0);
     glm::vec3 camera_position_g(30.0, 1.0, 9.0);
     glm::vec3 camera_look_at_g(9.0, 1.0, 0.5);
@@ -32,7 +33,7 @@ namespace game {
     bool downPressed = false;
     bool leftPressed = false;
     bool rightPressed = false;
-    bool usingMouseCamera = false;
+    bool usingMouseCamera = true;
 
     // Materials 
     const std::string material_directory_g = MATERIAL_DIRECTORY;
@@ -121,22 +122,75 @@ namespace game {
     void Game::SetupResources(void) {
 
         //!/ Create the heightMap
-        heightMap = CreateHeightMap(10, 20, 3.0);
+        heightMap = CreateHeightMap(50, 50, 3.0);
 
         //!/ Create geometry of the "Plane"
         //! This function uses these parameters, Object Name, Height Map, Grid Width, Grid Length, Number of Quads
-        resman_.CreatePlaneWithCraters("GameMapMesh", heightMap, 50, 100, 10, 20);
+        resman_.CreatePlaneWithCraters("GameMapMesh", heightMap, 50, 50, 50, 50);
 
         // Create geometry of the "wall"
         resman_.CreateTorus("TorusMesh");
 
-        // Load material to be used for normal mapping
+
+        /*
+        ======================
+        MATERIALS
+        ======================
+        */
         std::string filename = std::string(MATERIAL_DIRECTORY) + std::string("/normal_map");
         resman_.LoadResource(Material, "NormalMapMaterial", filename.c_str());
 
-        // Load texture to be used in normal mapping
-        filename = std::string(MATERIAL_DIRECTORY) + std::string("/normal_map2.png");
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("/textured_material");
+        resman_.LoadResource(Material, "TexturedMaterial", filename.c_str());
+
+        /*
+        ======================
+        MESHES
+        ======================
+        */
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/mushroom.obj");
+        resman_.LoadResource(Mesh, "Mushroom", filename.c_str());
+
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/treebottom.obj");
+        resman_.LoadResource(Mesh, "TreeTrunk", filename.c_str());
+
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/treetop.obj");
+        resman_.LoadResource(Mesh, "TreeTop", filename.c_str());
+
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/bush.obj");
+        resman_.LoadResource(Mesh, "Bush", filename.c_str());
+
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/wall_door.obj");
+        resman_.LoadResource(Mesh, "WallDoor", filename.c_str());
+
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/wall_full.obj");
+        resman_.LoadResource(Mesh, "WallFull", filename.c_str());
+
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/wall_roof.obj");
+        resman_.LoadResource(Mesh, "WallRoof", filename.c_str());
+
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/wall_window.obj");
+        resman_.LoadResource(Mesh, "WallWindow", filename.c_str());
+
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/roof_main.obj");
+        resman_.LoadResource(Mesh, "RoofMain", filename.c_str());
+
+        /*
+        ======================
+        TEXTURES
+        ======================
+        */
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/normal_map2.png");
         resman_.LoadResource(Texture, "NormalMap", filename.c_str());
+
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/mushroom_text.png");
+        resman_.LoadResource(Texture, "MushroomTexture", filename.c_str());
+
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/bark.png");
+        resman_.LoadResource(Texture, "TreeBark", filename.c_str());
+
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/leaves.png");
+        resman_.LoadResource(Texture, "TreeLeaves", filename.c_str());
     }
 
 
@@ -145,122 +199,149 @@ namespace game {
         // Set background color for the scene
         scene_.SetBackgroundColor(viewport_background_color_g);
 
+        glm::vec3 cabin_location(10.0, 3.0, 25.0);
+        CreateCabin(cabin_location);
+
+        CreateProps(50, 30, cabin_location);
+
         // Create an instance of the map
-        game::SceneNode* map = CreateInstance("MapInstance1", "GameMapMesh", "NormalMapMaterial", "NormalMap");
+        game::SceneNode* map = CreateInstance("MapInstance1", "GameMapMesh", "TexturedMaterial", "TreeLeaves");
     }
 
 
 
     void Game::MainLoop(void) {
 
-        //Vars that both Mouse and Arrows need
         float previousVer = 0.0f;
         float horizontalAngle = 0.0f;
         float verticalAngle = 0.0f;
 
-        //Vars that Arrows need
-        float arrowSpeed = 40.0f;
-        float maxVerticalAngle = glm::radians(85.0f);
-
-        //Vars that Mouse needs
-        double xpos, ypos;
-        //double lastX = window_width_g / 2.0, lastY = window_height_g / 2.0;
         float mouseSpeed = 0.01f;
+
+        double xpos, ypos;
+
+        //game::SceneNode* treetrunk1 = CreateInstance("TreeTrunk", "TreeTrunk", "TexturedMaterial", "MushroomTexture");
+
+       // game::SceneNode* mushroom = CreateInstance("Mushroom", "Mushroom", "TexturedMaterial", "MushroomTexture");
+        //mushroom->SetScale(glm::vec3(0.1, 0.1, 0.1));
+
+        glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+
+
 
         // Loop while the user did not close the window
         while (!glfwWindowShouldClose(window_)) {
+            glfwGetCursorPos(window_, &xpos, &ypos);
+            glfwSetCursorPos(window_, window_width_g / 2, window_height_g / 2);
 
-            //!/ If mouse movement is active
-            if (usingMouseCamera) {
+            static double last_time = 0;
+            double current_time = glfwGetTime();
 
-				static double last_time = 0;
-				double current_time = glfwGetTime();
+            horizontalAngle += mouseSpeed * (current_time - last_time) * float(window_width_g / 2 - xpos);
+            verticalAngle += mouseSpeed * (current_time - last_time) * float(window_height_g / 2 - ypos);
 
-                glfwGetCursorPos(window_, &xpos, &ypos);
-                glfwSetCursorPos(window_, window_width_g / 2, window_height_g / 2);
+            //printf("x = %.02f, y = %.02f\n", xpos, ypos);
 
-                horizontalAngle += mouseSpeed * (current_time - last_time) * float(window_width_g / 2 - xpos);
-                verticalAngle += mouseSpeed * (current_time - last_time) * float(window_height_g / 2 - ypos);
+            // Animate the scene
+            if (animating_) {
+                static double last_time = 0;
+                double current_time = glfwGetTime();
+                if ((current_time - last_time) > 0.01) {
+                    /*
+                    =========================================================
+                    MAIN LOOP
+                    =========================================================
+                    */
 
-                // Animate the scene
-                if (animating_) {
-                    if ((current_time - last_time) > 0.01) {
-                        //printf("GetUp(%f, %f, %f)\n", camera_.GetUp().x, camera_.GetUp().y, camera_.GetUp().z);
-                        //printf("horizantalAngle = %.02f, verticalAngle = %.02f\n", horizontalAngle, verticalAngle);
-
-                        camera_.Yaw(glm::radians(horizontalAngle));
-                        if (camera_.GetUp().y > 0.1f) {
-                            camera_.Pitch(glm::radians(verticalAngle));
-                            if (verticalAngle != 0.0f) {
-                                previousVer = verticalAngle;
-                            }
+                    // Camera Movement and Handle
+                    camera_.Yaw(glm::radians(horizontalAngle));
+                    if (camera_.GetUp().y > 0.1f) {
+                        camera_.Pitch(glm::radians(verticalAngle));
+                        if (verticalAngle != 0.0f) {
+                            previousVer = verticalAngle;
                         }
-                        else {
-                            if (previousVer < 0 && verticalAngle > 0) {
-                                camera_.Pitch(glm::radians(verticalAngle));
-                            }
-                            if (previousVer > 0 && verticalAngle < 0) {
-                                camera_.Pitch(glm::radians(verticalAngle));
-                            }
-                        }
-
-                        //scene_.Update();
-
-                        // Animate the map
-                        SceneNode* node = scene_.GetNode("MapInstance1");
-                        glm::quat rotation = glm::angleAxis(glm::pi<float>() / 180.0f, glm::vec3(0.0, 1.0, 0.0));
-                        //node->Rotate(rotation);
-                        last_time = current_time;
                     }
+                    else {
+                        if (previousVer < 0 && verticalAngle > 0) {
+                            camera_.Pitch(glm::radians(verticalAngle));
+                        }
+                        if (previousVer > 0 && verticalAngle < 0) {
+                            camera_.Pitch(glm::radians(verticalAngle));
+                        }
+                    }
+                    camera_.Roll(glm::radians(0.0f));
+
+                    CollisionDetection();
+                    //scene_.Update();
+
+                    // Animate the wall
+                    SceneNode* node = scene_.GetNode("MapInstance1");
+                    //SceneNode* node = scene_.GetNode("CratePlaneInstance1");
+                    //glm::quat rotation = glm::angleAxis(glm::pi<float>() / 180.0f, glm::vec3(0.0, 1.0, 0.0));
+                    //node->Rotate(rotation);
+                    last_time = current_time;
                 }
-
-                // Draw the scene
-                scene_.Draw(&camera_);
-
-                // Push buffer drawn in the background onto the display
-                glfwSwapBuffers(window_);
-
-                // Update other events like input handling
-                glfwPollEvents();
-
-                horizontalAngle = 0.0f;
-                // vertical angle : 0, look at the horizon
-                verticalAngle = 0.0f;
             }
-            else {
 
-				// Animate the scene
-				if (animating_) {
-					static double last_time = 0;
-					double current_time = glfwGetTime();
-					if ((current_time - last_time) > 0.01) {
-						//scene_.Update();
+            printf("x = %f, z = %f\n", camera_.GetPosition().x, camera_.GetPosition().z);
+            CollisionDetection();
 
-						// Animate the wall
-						SceneNode* node = scene_.GetNode("MapInstance1");
-						last_time = current_time;
-					}
-				}
+            // Draw the scene
+            scene_.Draw(&camera_);
 
-                // Snap player to the heightmap
-                // interpolated height value
+            // Push buffer drawn in the background onto the display
+            glfwSwapBuffers(window_);
 
-                // Draw the scene
-                scene_.Draw(&camera_);
+            // Update other events like input handling
+            glfwPollEvents();
 
-                // Push buffer drawn in the background onto the display
-                glfwSwapBuffers(window_);
-
-                // Update other events like input handling
-                glfwPollEvents();
-
-                horizontalAngle = 0.0f;
-                // vertical angle : 0, look at the horizon
-                verticalAngle = 0.0f;
-            }
+            horizontalAngle = 0.0f;
+            // vertical angle : 0, look at the horizon
+            verticalAngle = 0.0f;
         }
     }
 
+    void Game::CollisionDetection() {
+
+        // Determine current player position
+        glm::vec3 playerPosition = camera_.GetPosition();
+
+        for (auto it = scene_.begin(); it != scene_.end(); ++it) {
+            SceneNode* currentObj = *it;
+
+            // Collision for Trees
+            if ((currentObj->GetName()).find("TreeTrunk") != std::string::npos) {
+
+            }
+            // Collision for ALL Cabin Walls (Not the Entrance) - THESE SHOULD BE ABSOLUTELY SOLID THE PLAYER CANNOT GO THROUGH THE WINDOW BECAUSE THEY SUCK
+            if ((currentObj->GetName()).find("Wall") != std::string::npos) {
+
+            }
+            // Collision for ALL ENTRANCES (Not the Walls) - There are two entrances, same orientation, so collision for detecting the door should be the same.
+            if ((currentObj->GetName()).find("CabinEntrance") != std::string::npos) {
+
+            }
+
+            // Collision for Mushroom
+            if ((currentObj->GetName()).find("Mushroom") != std::string::npos) {
+
+            }
+            // Collision for Bushes
+            if ((currentObj->GetName()).find("Bush") != std::string::npos) {
+
+            }
+            // Collision for Bees
+            if ((currentObj->GetName()).find("Bees") != std::string::npos) {
+
+            }
+
+            // Collision for Nail
+            if ((currentObj->GetName()).find("Nail") != std::string::npos) {
+
+            }
+
+        }
+    }
 
     void Game::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
 
@@ -288,6 +369,7 @@ namespace game {
         if (key == GLFW_KEY_W) {
             printf("%f", game->camera_.GetPosition().y - 1.0);
             if (game->camera_.GetPosition().y - 1.0 >= -1.5) {
+
                 game->camera_.Translate(game->camera_.GetForward() * trans_factor);
             }
         }
@@ -339,7 +421,6 @@ namespace game {
         }
     }
 
-
     void Game::ResizeCallback(GLFWwindow* window, int width, int height) {
 
         // Set up viewport and camera projection based on new window size
@@ -349,54 +430,130 @@ namespace game {
         game->camera_.SetProjection(camera_fov_g, camera_near_clip_distance_g, camera_far_clip_distance_g, width, height);
     }
 
-
     Game::~Game() {
 
         glfwTerminate();
     }
 
+    void Game::CreateCabin(glm::vec3 location) {
 
-    Asteroid* Game::CreateAsteroidInstance(std::string entity_name, std::string object_name, std::string material_name) {
+        float location_x = location.x;
+        float location_y = location.y;
+        float location_z = location.z;
 
-        // Get resources
-        Resource* geom = resman_.GetResource(object_name);
-        if (!geom) {
-            throw(GameException(std::string("Could not find resource \"") + object_name + std::string("\"")));
-        }
+        // A wall is of ~6.6 length, and ~1.7 height. - Gabe
 
-        Resource* mat = resman_.GetResource(material_name);
-        if (!mat) {
-            throw(GameException(std::string("Could not find resource \"") + material_name + std::string("\"")));
-        }
+        game::SceneNode* wallEntrance = CreateInstance("CabinEntrance", "WallDoor", "TexturedMaterial", "TreeBark");
+        game::SceneNode* wallEntrance2 = CreateInstance("CabinEntrance2", "WallDoor", "TexturedMaterial", "TreeBark");
 
-        // Create asteroid instance
-        Asteroid* ast = new Asteroid(entity_name, geom, mat);
-        scene_.AddNode(ast);
-        return ast;
+        game::SceneNode* wallRoof = CreateInstance("WallRoof", "WallRoof", "TexturedMaterial", "TreeBark");
+        game::SceneNode* wallRoof2 = CreateInstance("WallRoof2", "WallRoof", "TexturedMaterial", "TreeBark");
+
+        game::SceneNode* roofMain = CreateInstance("Roof", "RoofMain", "TexturedMaterial", "TreeBark");
+
+        game::SceneNode* wallWindow = CreateInstance("WallWindow", "WallWindow", "TexturedMaterial");
+        game::SceneNode* wallFull = CreateInstance("WallFull", "WallFull", "TexturedMaterial");
+        game::SceneNode* floor = CreateInstance("Floor", "WallFull", "TexturedMaterial");
+
+
+        wallEntrance->SetPosition(glm::vec3(location_x, location_y, location_z));
+        wallEntrance->SetScale(glm::vec3(0.5, 0.5, 0.5));
+
+        wallEntrance2->SetPosition(glm::vec3(location_x, location_y, location_z+6.6f));
+        wallEntrance2->SetScale(glm::vec3(0.5, 0.5, 0.5));
+
+        wallRoof->SetPosition(glm::vec3(location_x, location_y+1.7, location_z));
+        wallRoof->SetScale(glm::vec3(0.5, 0.5, 0.5));
+
+        wallRoof2->SetPosition(glm::vec3(location_x, location_y+1.7, location_z + 6.6f));
+        wallRoof2->SetScale(glm::vec3(0.5, 0.5, 0.5));
+
+        roofMain->SetPosition(glm::vec3(location_x, location_y + 1.7, location_z + 3.3f));
+        roofMain->SetScale(glm::vec3(0.4, 0.4, 3.3));
+
+        wallWindow->SetPosition(glm::vec3(location_x+3.3f, location_y, location_z+3.3f));
+        wallWindow->SetScale(glm::vec3(0.5, 0.5, 0.5));
+        wallWindow->Rotate(glm::angleAxis(glm::radians(90.0f), glm::vec3(0.0, 1.0, 0.0)));
+
+        wallFull->SetPosition(glm::vec3(location_x-3.3f, location_y, location_z+3.3f));
+        wallFull->SetScale(glm::vec3(0.5, 0.5, 0.5));
+        wallFull->Rotate(glm::angleAxis(glm::radians(90.0f), glm::vec3(0.0, 1.0, 0.0)));
+
+        floor->SetPosition(glm::vec3(location_x, location_y, location_z));
+        floor->SetScale(glm::vec3(0.5, 1.1, 0.5));
+        floor->Rotate(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0)));
+
     }
 
+    void Game::CreateProps(int treeNum, int bushNum, glm::vec3 cabin_location) {
 
-    void Game::CreateAsteroidField(int num_asteroids) {
-
-        // Create a number of asteroid instances
-        for (int i = 0; i < num_asteroids; i++) {
-            // Create instance name
+        // TREE CREATION
+        for (int i = 0; i < treeNum; ++i) {
             std::stringstream ss;
             ss << i;
             std::string index = ss.str();
-            std::string name = "AsteroidInstance" + index;
+            std::string name = "TreeTrunk" + index;
+            std::string name2 = "TreeTop" + index;
 
-            // Create asteroid instance
-            Asteroid* ast = CreateAsteroidInstance(name, "SimpleSphereMesh", "ObjectMaterial");
+            game::SceneNode* treeTrunk = CreateInstance(name, "TreeTrunk", "TexturedMaterial", "TreeBark");
+            game::SceneNode* treeTop = CreateInstance(name2, "TreeTop", "TexturedMaterial", "TreeLeaves");
 
-            // Set attributes of asteroid: random position, orientation, and
-            // angular momentum
-            ast->SetPosition(glm::vec3(-300.0 + 600.0 * ((float)rand() / RAND_MAX), -300.0 + 600.0 * ((float)rand() / RAND_MAX), 600.0 * ((float)rand() / RAND_MAX)));
-            ast->SetOrientation(glm::normalize(glm::angleAxis(glm::pi<float>() * ((float)rand() / RAND_MAX), glm::vec3(((float)rand() / RAND_MAX), ((float)rand() / RAND_MAX), ((float)rand() / RAND_MAX)))));
-            ast->SetAngM(glm::normalize(glm::angleAxis(0.05f * glm::pi<float>() * ((float)rand() / RAND_MAX), glm::vec3(((float)rand() / RAND_MAX), ((float)rand() / RAND_MAX), ((float)rand() / RAND_MAX)))));
+            bool locationFound = false;
+
+            while (!locationFound) {
+                std::random_device rd;
+                std::mt19937 gen(rd());
+                std::uniform_int_distribution<int> x_placementDist(0, 50);
+                std::uniform_int_distribution<int> z_placementDist(0, 50);
+
+                std::uniform_int_distribution<int> heightDist(-1, 0);
+                std::uniform_int_distribution<int> angleDist(-10, 10);
+
+                int random_x = x_placementDist(gen);
+                int random_z = z_placementDist(gen);
+                int random_y = heightDist(gen) + heightMap[random_z + (random_x * 50)];
+                int random_ang = angleDist(gen);
+
+                if (!((random_x < cabin_location.x + 5 && random_x > cabin_location.x - 15) && (random_z < cabin_location.z + 5 && random_x > cabin_location.z - 15))) {
+                    locationFound = true;
+                    treeTrunk->SetPosition(glm::vec3(random_x, random_y, random_z));
+                    treeTrunk->Rotate(glm::angleAxis((float)random_ang, glm::vec3(0.0, 1.0, 0.0)));
+
+                    treeTop->SetPosition(glm::vec3(random_x, random_y, random_z));
+                    treeTop->Rotate(glm::angleAxis(glm::radians((float)random_ang), glm::vec3(0.0, 1.0, 0.0)));
+                }
+            }
+        }
+
+        // BUSH CREATION
+        for (int i = 0; i < bushNum; ++i) {
+            std::stringstream ss;
+            ss << i;
+            std::string index = ss.str();
+            std::string name = "Bush" + index;
+            game::SceneNode* bush = CreateInstance(name, "Bush", "TexturedMaterial", "TreeLeaves");
+
+            bool locationFound = false;
+            while (!locationFound) {
+
+                std::random_device rd;
+                std::mt19937 gen(rd());
+                std::uniform_int_distribution<int> placementDist(0, 50);
+                std::uniform_int_distribution<int> angleDist(0, 50);
+
+                int random_x = placementDist(gen);
+                int random_z = placementDist(gen);
+
+                int random_ang = angleDist(gen);
+                if (!((random_x < cabin_location.x + 5 && random_x > cabin_location.x - 15) && (random_z < cabin_location.z + 5 && random_x > cabin_location.z - 15))) {
+                    locationFound = true;
+                    bush->SetPosition(glm::vec3(random_x, heightMap[random_z + (random_x * 50)], random_z));
+                    bush->SetScale(glm::vec3(0.7, 0.7, 0.7));
+                    bush->Rotate(glm::angleAxis((float)random_ang, glm::vec3(0.0, 1.0, 0.0)));
+                }
+            }
         }
     }
-
 
     SceneNode* Game::CreateInstance(std::string entity_name, std::string object_name, std::string material_name, std::string texture_name) {
 
