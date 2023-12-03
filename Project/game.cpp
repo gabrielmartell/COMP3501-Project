@@ -426,7 +426,13 @@ namespace game {
             // Collision for ALL ENTRANCES (Not the Walls) - There are two entrances, same orientation, so collision for detecting the door should be the same.
             if ((currentObj->GetName()).find("CabinEntrance") != std::string::npos) {
 
-                
+                glm::vec3 objPosition = currentObj->GetPosition();
+                float objRadius = 1.0f; //Needs to be changed per object
+
+                if (glm::distance(playerPosition, objPosition) < objRadius) {
+                    camera_.SetPosition(lastPosition); //Reset player position
+                    break;
+                }
 
             }
 
