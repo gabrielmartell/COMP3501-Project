@@ -80,6 +80,9 @@ namespace game {
             //!/ Height map function
             GLfloat* CreateHeightMap(int v_gWidth, int v_gLength, float hillHeight);
 
+            //Get what your height should be based on current position
+            float GetHeightFromMap(float x, float z, int v_gWidth, int v_gLength);
+
     }; // class Game
 
 } // namespace game

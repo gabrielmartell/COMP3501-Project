@@ -8,6 +8,10 @@
 #include "game.h"
 #include "path_config.h"
 
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+
 namespace game {
 
     // Some configuration constants
@@ -34,6 +38,24 @@ namespace game {
     bool leftPressed = false;
     bool rightPressed = false;
     bool usingMouseCamera = true;
+    
+    //Crouching Boolean
+    bool isCrouching = false;
+    bool isHidden = false;
+
+    //This will control whether UI from IMGUI is on
+    bool usingUI = true;
+    bool game_is_over = false;
+
+    //There's another function where I need these variables
+    //So I made them global ;p
+    int v_gWidthReal = 50.0;
+    int v_gLengthReal = 50.0;
+
+    //This is for collision detection
+    //We need a way to move the player back to their last position
+    //Though there's probably a better solve than this global
+    glm::vec3 lastPosition;
 
     // Materials 
     const std::string material_directory_g = MATERIAL_DIRECTORY;
@@ -54,6 +76,15 @@ namespace game {
 
         // Set variables
         animating_ = true;
+
+        //ImGui initialization code
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGuiIO& io = ImGui::GetIO();
+        (void)io;
+        ImGui_ImplGlfw_InitForOpenGL(window_, true);
+        ImGui_ImplOpenGL3_Init();
+        io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
     }
 
 
@@ -122,7 +153,9 @@ namespace game {
     void Game::SetupResources(void) {
 
         //!/ Create the heightMap
-        heightMap = CreateHeightMap(50, 50, 3.0);
+        //!/ The values can be changed at the top since they're global
+        //!/ I swear there's a good reason
+        heightMap = CreateHeightMap(v_gWidthReal, v_gLengthReal, 3.0);
 
         //!/ Create geometry of the "Plane"
         //! This function uses these parameters, Object Name, Height Map, Grid Width, Grid Length, Number of Quads
@@ -225,7 +258,10 @@ namespace game {
        // game::SceneNode* mushroom = CreateInstance("Mushroom", "Mushroom", "TexturedMaterial", "MushroomTexture");
         //mushroom->SetScale(glm::vec3(0.1, 0.1, 0.1));
 
+       
         glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+       
+        
 
 
 
@@ -283,12 +319,61 @@ namespace game {
                 }
             }
 
-            printf("x = %f, z = %f\n", camera_.GetPosition().x, camera_.GetPosition().z);
+            //printf("x = %f, z = %f\n", camera_.GetPosition().x, camera_.GetPosition().z);
             CollisionDetection();
 
             // Draw the scene
             scene_.Draw(&camera_);
 
+            
+            if (usingUI) {
+                //Start UI
+                //Start a new ImGui frame
+                ImGui_ImplOpenGL3_NewFrame();
+                ImGui_ImplGlfw_NewFrame();
+                ImGui::NewFrame();
+
+
+
+
+
+
+
+                //Menu Text
+                std::string StartupText = "Welcome to HUNGRY MAN";
+                std::string PressText = "Press Tab to START";
+                ImGui::Text(StartupText.c_str());
+                ImGui::Text(PressText.c_str());
+
+                if (game_is_over) {
+                    ImGui::EndFrame();
+                    ImGui::NewFrame();
+                    ImGui::Text("Game Over!");
+                    //Handle anything else in here later
+                }
+
+
+
+
+
+                //You can just call Text again to add more text to the GUI
+                //ImGui::Text(text.c_str());
+
+
+                //Render the ImGui frame
+                ImGui::Render();
+                int display_w, display_h;
+                glfwGetFramebufferSize(window_, &display_w, &display_h);
+                glViewport(0, 0, display_w, display_h);
+                glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+                glClear(GL_COLOR_BUFFER_BIT);
+                ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+                glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+                
+                //End UI
+            }
+            
+            
             // Push buffer drawn in the background onto the display
             glfwSwapBuffers(window_);
 
@@ -298,6 +383,11 @@ namespace game {
             horizontalAngle = 0.0f;
             // vertical angle : 0, look at the horizon
             verticalAngle = 0.0f;
+
+
+            
+
+
         }
     }
 
@@ -311,23 +401,56 @@ namespace game {
 
             // Collision for Trees
             if ((currentObj->GetName()).find("TreeTrunk") != std::string::npos) {
+                
+                glm::vec3 objPosition = currentObj->GetPosition();
+                float objRadius = 1.0f; //Needs to be changed per object
 
+                if (glm::distance(playerPosition, objPosition) < objRadius) {
+                    camera_.SetPosition(lastPosition); //Reset player position
+                    break; 
+                }
             }
+
             // Collision for ALL Cabin Walls (Not the Entrance) - THESE SHOULD BE ABSOLUTELY SOLID THE PLAYER CANNOT GO THROUGH THE WINDOW BECAUSE THEY SUCK
             if ((currentObj->GetName()).find("Wall") != std::string::npos) {
+
+                glm::vec3 objPosition = currentObj->GetPosition();
+                float objRadius = 1.0f; //Needs to be changed per object
+
+                if (glm::distance(playerPosition, objPosition) < objRadius) {
+                    camera_.SetPosition(lastPosition); //Reset player position
+                    break;
+                }
 
             }
             // Collision for ALL ENTRANCES (Not the Walls) - There are two entrances, same orientation, so collision for detecting the door should be the same.
             if ((currentObj->GetName()).find("CabinEntrance") != std::string::npos) {
+
+                
 
             }
 
             // Collision for Mushroom
             if ((currentObj->GetName()).find("Mushroom") != std::string::npos) {
 
+                
+
             }
             // Collision for Bushes
             if ((currentObj->GetName()).find("Bush") != std::string::npos) {
+
+                glm::vec3 objPosition = currentObj->GetPosition();
+                float objRadius = 1.0f; //Needs to be changed per object
+
+                if (glm::distance(playerPosition, objPosition) < objRadius) {
+                    if (isCrouching) {
+                        isHidden = true;
+                    }
+                }
+                else {
+                    isHidden = false;
+                }
+              
 
             }
             // Collision for Bees
@@ -350,42 +473,109 @@ namespace game {
         Game* game = (Game*)ptr;
         double lastToggleTime = 0.0;
         const double toggleDelay = 0.5;
+        glm::vec3 newPosition;
 
         // Quit game if 'q' is pressed
         if (key == GLFW_KEY_Q && action == GLFW_PRESS) {
             glfwSetWindowShouldClose(window, true);
         }
 
-        // Stop animation if space bar is pressed
-        if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
-            game->animating_ = (game->animating_ == true) ? false : true;
-        }
+        //// Stop animation if space bar is pressed
+        //if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
+        //    game->animating_ = (game->animating_ == true) ? false : true;
+        //}
 
         //!/ View control
         float rot_factor(glm::pi<float>() / 180);
         float trans_factor = 0.1;
 
+        float currentHeight = 0.8;
+
+        if (isCrouching) {
+            currentHeight = 0.4;
+            trans_factor = 0.05;
+        }
+        else {
+            currentHeight = 0.8;
+        }
+
         //!/ WASD movment
         if (key == GLFW_KEY_W) {
-            printf("%f", game->camera_.GetPosition().y - 1.0);
-            if (game->camera_.GetPosition().y - 1.0 >= -1.5) {
 
-                game->camera_.Translate(game->camera_.GetForward() * trans_factor);
+            //Last position snippet
+            lastPosition = game->camera_.GetPosition();
+
+            newPosition = game->camera_.GetPosition() + (game->camera_.GetForward() * trans_factor);
+            float groundHeight = game->GetHeightFromMap(newPosition.x, newPosition.z, v_gWidthReal, v_gLengthReal);
+
+            printf("Ground Height: %f, newPosition.y: %f\n", groundHeight, newPosition.y);
+            
+            if (groundHeight - lastPosition.y > 2) {
+                game->camera_.SetPosition(lastPosition);
+                
             }
+            else {
+                newPosition.y = groundHeight + currentHeight;
+                game->camera_.SetPosition(newPosition);
+            }
+            
         }
         if (key == GLFW_KEY_S) {
-            if (game->camera_.GetPosition().y - 1.0 >= -1.5) {
-                game->camera_.Translate(-game->camera_.GetForward() * trans_factor);
+            //Last position snippet
+            lastPosition = game->camera_.GetPosition();
+
+            newPosition = game->camera_.GetPosition() - (game->camera_.GetForward() * trans_factor);
+            float groundHeight = game->GetHeightFromMap(newPosition.x, newPosition.z, v_gWidthReal, v_gLengthReal);
+
+            printf("Ground Height: %f, newPosition.y: %f\n", groundHeight, newPosition.y);
+
+            if (groundHeight - lastPosition.y > 2) {
+                game->camera_.SetPosition(lastPosition);
+
             }
+            else {
+                newPosition.y = groundHeight + currentHeight;
+                game->camera_.SetPosition(newPosition);
+            }
+            
         }
         if (key == GLFW_KEY_A) {
-            if (game->camera_.GetPosition().y - 1.0 >= -1.5) {
-                game->camera_.Translate(-game->camera_.GetSide() * trans_factor);
+            //Last position snippet
+            lastPosition = game->camera_.GetPosition();
+
+            newPosition = game->camera_.GetPosition() - (game->camera_.GetSide() * trans_factor);
+
+            float groundHeight = game->GetHeightFromMap(newPosition.x, newPosition.z, v_gWidthReal, v_gLengthReal);
+
+            printf("Ground Height: %f, newPosition.y: %f\n", groundHeight, newPosition.y);
+
+            if (groundHeight - lastPosition.y > 2) {
+                game->camera_.SetPosition(lastPosition);
+
+            }
+            else {
+                newPosition.y = groundHeight + currentHeight;
+                game->camera_.SetPosition(newPosition);
             }
         }
         if (key == GLFW_KEY_D) {
-            if (game->camera_.GetPosition().y - 1.0 >= -1.5) {
-                game->camera_.Translate(game->camera_.GetSide() * trans_factor);
+            //Last position snippet
+            lastPosition = game->camera_.GetPosition();
+
+            newPosition = game->camera_.GetPosition() + (game->camera_.GetSide() * trans_factor);
+
+
+            float groundHeight = game->GetHeightFromMap(newPosition.x, newPosition.z, v_gWidthReal, v_gLengthReal);
+
+            printf("Ground Height: %f, newPosition.y: %f\n", groundHeight, newPosition.y);
+
+            if (groundHeight - lastPosition.y > 2) {
+                game->camera_.SetPosition(lastPosition);
+
+            }
+            else {
+                newPosition.y = groundHeight + currentHeight;
+                game->camera_.SetPosition(newPosition);
             }
         }
 
@@ -408,17 +598,48 @@ namespace game {
             double currentTime = glfwGetTime(); 
             if (currentTime - lastToggleTime > toggleDelay) {
                 usingMouseCamera = !usingMouseCamera;
-                printf("usingMouseCamera: %d\n", usingMouseCamera);
+                //printf("usingMouseCamera: %d\n", usingMouseCamera);
                 lastToggleTime = currentTime; 
             }
         }
         
         //!/ Space button to create upwards movment
         if (key == GLFW_KEY_SPACE) {
+            /*
             if (game->camera_.GetPosition().y - 1.0 >= -1.5) {
                 game->camera_.Translate(game->camera_.GetUp() * trans_factor);
             }
+            */
+
         }
+
+
+        //!/ "C" will toggle stance (Crouch vs Stand)
+        if (key == GLFW_KEY_C && action == GLFW_PRESS) {
+            double currentTime = glfwGetTime();
+            if (currentTime - lastToggleTime > toggleDelay) {
+                if (isCrouching) {
+                    newPosition = game->camera_.GetPosition();
+                    newPosition.y += 0.4;
+                    game->camera_.SetPosition(newPosition);
+                    isCrouching = false;
+                }
+                else {
+                    newPosition = game->camera_.GetPosition();
+                    newPosition.y -= 0.4;
+                    game->camera_.SetPosition(newPosition);
+                    isCrouching = true;
+                }
+                lastToggleTime = currentTime;
+            }
+        }
+
+
+        //!/ Tab will allow the game to start
+        if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
+            usingUI = false;
+        }
+
     }
 
     void Game::ResizeCallback(GLFWwindow* window, int width, int height) {
@@ -618,6 +839,18 @@ namespace game {
         }
 
         return vertexHeight;
+    }
+
+    float Game::GetHeightFromMap(float x, float z, int v_gWidth, int v_gLength) {
+        //Keep x and y in bounds
+        if (x < 0 || x >= v_gWidth || z < 0 || z >= v_gLength) return 0.0f; 
+
+        //Translate world coordinates to height map indices
+        int mapX = static_cast<int>(x);
+        int mapZ = static_cast<int>(z);
+
+        //Get height from height map
+        return heightMap[mapZ + (mapX * v_gLength)];
     }
 
 } // namespace game
