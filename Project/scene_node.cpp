@@ -9,10 +9,11 @@
 
 namespace game {
 
-SceneNode::SceneNode(const std::string name, const Resource *geometry, const Resource *material, const Resource *texture){
+SceneNode::SceneNode(const std::string name, const Resource *geometry, const Resource *material, const Resource *texture, SceneNode* parent){
 
     // Set name of scene node
     name_ = name;
+    parent_ = parent;
 
     // Set geometry
     if (geometry->GetType() == PointSet){
@@ -73,6 +74,9 @@ glm::vec3 SceneNode::GetScale(void) const {
     return scale_;
 }
 
+SceneNode* SceneNode::GetParent() {
+    return parent_;
+}
 
 void SceneNode::SetPosition(glm::vec3 position){
 
@@ -190,11 +194,21 @@ void SceneNode::SetupShader(GLuint program){
     glVertexAttribPointer(tex_att, 2, GL_FLOAT, GL_FALSE, 11*sizeof(GLfloat), (void *) (9*sizeof(GLfloat)));
     glEnableVertexAttribArray(tex_att);
 
+    glm::mat4 transf;
+
     // World transformation
+
+    //NEED TO FIX PARENT TRANSFORMATION
     glm::mat4 scaling = glm::scale(glm::mat4(1.0), scale_);
     glm::mat4 rotation = glm::mat4_cast(orientation_);
     glm::mat4 translation = glm::translate(glm::mat4(1.0), position_);
-    glm::mat4 transf = translation * rotation * scaling;
+
+    if (parent_ != NULL) {
+        transf = translation * rotation * scaling;
+    }
+    else {
+        transf = translation * rotation * scaling;
+    }
 
     GLint world_mat = glGetUniformLocation(program, "world_mat");
     glUniformMatrix4fv(world_mat, 1, GL_FALSE, glm::value_ptr(transf));

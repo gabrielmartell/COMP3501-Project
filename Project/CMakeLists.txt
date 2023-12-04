@@ -1,16 +1,34 @@
 cmake_minimum_required(VERSION 2.6)
 
 # Name of project
-set(PROJ_NAME NormalMappingDemo)
+set(PROJ_NAME Project)
 project(${PROJ_NAME})
 
 # Specify project files: header files and source files
 set(HDRS
     asteroid.h camera.h game.h model_loader.h resource.h resource_manager.h scene_graph.h scene_node.h
+    imconfig.h
+    imgui.h
+    imgui_internal.h
+    imstb_rectpack.h
+    imstb_textedit.h
+    imstb_truetype.h
+    imgui_impl_opengl3_loader.h
+    imgui_impl_glfw.h
+    imgui_impl_opengl2.h
+    imgui_impl_opengl3.h 
 )
  
 set(SRCS
-   asteroid.cpp camera.cpp game.cpp main.cpp resource.cpp resource_manager.cpp scene_graph.cpp scene_node.cpp material_fp.glsl material_vp.glsl metal_fp.glsl metal_vp.glsl plastic_fp.glsl plastic_vp.glsl textured_material_fp.glsl textured_material_vp.glsl three-term_shiny_blue_fp.glsl three-term_shiny_blue_vp.glsl normal_map_vp.glsl normal_map_fp.glsl 
+   asteroid.cpp camera.cpp game.cpp main.cpp resource.cpp resource_manager.cpp scene_graph.cpp scene_node.cpp material_fp.glsl material_vp.glsl metal_fp.glsl metal_vp.glsl plastic_fp.glsl plastic_vp.glsl textured_material_fp.glsl textured_material_vp.glsl three-term_shiny_blue_fp.glsl three-term_shiny_blue_vp.glsl normal_map_vp.glsl normal_map_fp.glsl
+    imgui.cpp
+    imgui_demo.cpp
+    imgui_draw.cpp
+    imgui_tables.cpp
+    imgui_widgets.cpp
+    imgui_impl_glfw.cpp
+    imgui_impl_opengl2.cpp
+    imgui_impl_opengl3.cpp 
 )
 
 # Add path name to configuration file
@@ -25,7 +43,7 @@ include_directories(${OPENGL_INCLUDE_DIR})
 target_link_libraries(${PROJ_NAME} ${OPENGL_gl_LIBRARY})
 
 # Other libraries needed
-set(LIBRARY_PATH D:\Library)
+set(LIBRARY_PATH D:/Library)
 include_directories(${LIBRARY_PATH}/include)
 if(NOT WIN32)
     find_library(GLEW_LIBRARY GLEW)

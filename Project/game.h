@@ -71,11 +71,12 @@ namespace game {
 
             void CreateCabin(glm::vec3);
             void CreateProps(int, int, glm::vec3);
+            void CreateHungry(glm::vec3);
 
             void CollisionDetection();
 
             // Create an instance of an object stored in the resource manager
-            SceneNode *CreateInstance(std::string entity_name, std::string object_name, std::string material_name, std::string texture_name = std::string(""));
+            SceneNode *CreateInstance(std::string entity_name, std::string object_name, std::string material_name, std::string texture_name = std::string(""), SceneNode* parent = NULL);
 
             //!/ Height map function
             GLfloat* CreateHeightMap(int v_gWidth, int v_gLength, float hillHeight);
