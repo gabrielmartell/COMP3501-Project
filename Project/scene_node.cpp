@@ -95,6 +95,17 @@ void SceneNode::SetScale(glm::vec3 scale){
     scale_ = scale;
 }
 
+void SceneNode::SetOrbit(glm::vec3 pos, glm::quat rotate) {
+    orientation_ *= rotate;
+    orientation_ = glm::normalize(orientation_);
+    orbit_ = (glm::translate(glm::mat4(1.0), glm::vec3(pos.x * -1.0f, pos.y * -1.0f, pos.z * -1.0f)) * glm::mat4_cast(orientation_) * glm::translate(glm::mat4(1.0f), pos));
+}
+void SceneNode::SetEnemyState(int state) {
+    state_ = state;
+
+}
+int SceneNode::GetState() { return state_; };
+
 
 void SceneNode::Translate(glm::vec3 trans){
 
@@ -194,21 +205,28 @@ void SceneNode::SetupShader(GLuint program){
     glVertexAttribPointer(tex_att, 2, GL_FLOAT, GL_FALSE, 11*sizeof(GLfloat), (void *) (9*sizeof(GLfloat)));
     glEnableVertexAttribArray(tex_att);
 
-    glm::mat4 transf;
-
     // World transformation
 
     //NEED TO FIX PARENT TRANSFORMATION
-    glm::mat4 scaling = glm::scale(glm::mat4(1.0), scale_);
-    glm::mat4 rotation = glm::mat4_cast(orientation_);
-    glm::mat4 translation = glm::translate(glm::mat4(1.0), position_);
+    glm::mat4 transf;
 
     if (parent_ != NULL) {
-        transf = translation * rotation * scaling;
+        glm::mat4 localTrans;
+
+        localTrans = glm::translate(glm::mat4(1.0), GetPosition());
+        localTrans *= glm::mat4_cast(GetOrientation());
+        localTrans *= orbit_;
+
+        transf = parent_->current_trans_ * localTrans;
     }
     else {
-        transf = translation * rotation * scaling;
+        glm::mat4 scaling = glm::scale(glm::mat4(1.0), scale_);
+        glm::mat4 rotation = glm::mat4_cast(orientation_);
+        glm::mat4 translation = glm::translate(glm::mat4(1.0), position_);
+
+        transf = translation * orbit_ * rotation * scaling;
     }
+    current_trans_ = transf;
 
     GLint world_mat = glGetUniformLocation(program, "world_mat");
     glUniformMatrix4fv(world_mat, 1, GL_FALSE, glm::value_ptr(transf));

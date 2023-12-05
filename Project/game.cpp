@@ -56,6 +56,7 @@ namespace game {
     //We need a way to move the player back to their last position
     //Though there's probably a better solve than this global
     glm::vec3 lastPosition;
+    bool inCabin = false;
 
     // Materials 
     const std::string material_directory_g = MATERIAL_DIRECTORY;
@@ -160,7 +161,7 @@ namespace game {
         //!/ Create geometry of the "Plane"
         //! This function uses these parameters, Object Name, Height Map, Grid Width, Grid Length, Number of Quads
         resman_.CreatePlaneWithCraters("GameMapMesh", heightMap, 50, 50, 50, 50);
-        printf("MAP [|]\n");
+        printf("    MAP [|]\n");
 
         // Create geometry of the "wall"
         resman_.CreateTorus("TorusMesh");
@@ -171,7 +172,7 @@ namespace game {
         MATERIALS
         ======================
         */
-        printf("MATERIALS [");
+        printf("    MATERIALS [");
         std::string filename = std::string(MATERIAL_DIRECTORY) + std::string("/normal_map");
         resman_.LoadResource(Material, "NormalMapMaterial", filename.c_str());
         printf("|");
@@ -186,7 +187,7 @@ namespace game {
         ======================
         */
 
-        printf("MESHES [");
+        printf("    MESHES [");
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/mushroom.obj");
         resman_.LoadResource(Mesh, "Mushroom", filename.c_str());
         printf("|");
@@ -261,7 +262,7 @@ namespace game {
         TEXTURES
         ======================
         */
-        printf("TEXTURES [");
+        printf("    TEXTURES [");
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/normal_map2.png");
         resman_.LoadResource(Texture, "NormalMap", filename.c_str());
         printf("|");
@@ -371,6 +372,7 @@ namespace game {
                     }
                     camera_.Roll(glm::radians(0.0f));
 
+                    EnemyMovement(current_time - last_time);
                     CollisionDetection();
                     //scene_.Update();
 
@@ -384,6 +386,7 @@ namespace game {
             }
 
             //printf("x = %f, z = %f\n", camera_.GetPosition().x, camera_.GetPosition().z);
+         
             CollisionDetection();
 
             // Draw the scene
@@ -455,11 +458,71 @@ namespace game {
         }
     }
 
+    void Game::EnemyMovement(float dt) {
+        SceneNode* head = scene_.GetNode("HungryHead");
+        SceneNode* torso = scene_.GetNode("HungryTorso");
+        
+        // PATROL
+        if (head->GetState() == 1 || inCabin) {
+            float spottingRadius = 5.0f;
+            glm::vec3 hungryPosition = head->GetPosition();
+
+            if ((glm::distance(camera_.GetPosition(), hungryPosition) < spottingRadius && isHidden == false) && !inCabin) {
+                head->SetEnemyState(2);
+            }
+        }
+
+        // CHASE
+        else if (head->GetState() == 2) {
+            float chaseRadius = 5.0f;
+            glm::vec3 direction = camera_.GetPosition() - head->GetPosition();
+
+            direction.y = 0.0f;
+            direction.x *= (0.2f * dt);
+            direction.z *= (0.2f * dt);
+
+            head->Translate(direction);
+            torso->Translate(direction);
+
+            glm::vec3 hungryPosition = head->GetPosition();
+
+            //Calculation and Offset for Hungry
+            float newY = 3 * cos((M_PI / fabs(50 * 2 / 3)) * hungryPosition.x);
+            if (newY + 3 > 3) { newY = 0.0f; }
+            if (hungryPosition.x > 40) { newY = -3.0f; }
+            hungryPosition.y = newY + 3;
+
+            // Move head and torso concurrently (Head will look at player, and we dont want its rotations to affect the torso.)
+            head->SetPosition(hungryPosition);
+            torso->SetPosition(hungryPosition);
+
+            
+            //If the player is hiding in a bush.
+            if ( (glm::distance(camera_.GetPosition(), hungryPosition) > chaseRadius && isHidden) || inCabin) {
+                head->SetEnemyState(1);
+            }
+        }      
+
+    }
+
     void Game::CollisionDetection() {
 
         // Determine current player position
         glm::vec3 playerPosition = camera_.GetPosition();
+        
+        // COLLISION FOR CHECKING IF PLAYER IS IN CABIN
+        SceneNode* cabinDoor = scene_.GetNode("CabinEntrance");
+        glm::vec3 wallStart = cabinDoor->GetPosition();
+        glm::vec3 wallEnd = cabinDoor->GetPosition();
+        wallEnd.x = cabinDoor->GetPosition().x + 3.3;
+        wallStart.x = cabinDoor->GetPosition().x - 3.3;
+        wallEnd.z = cabinDoor->GetPosition().z + 6.9;
+        wallStart.z = cabinDoor->GetPosition().z - 0.3;
 
+        if ( (playerPosition.x > wallStart.x && playerPosition.x < wallEnd.x) && (playerPosition.z > wallStart.z && playerPosition.z < wallEnd.z)) {inCabin = true;}
+        else {inCabin = false;}
+
+        // COLLISION CHECK FOR EVERY OTHER OBJECT
         for (auto it = scene_.begin(); it != scene_.end(); ++it) {
             SceneNode* currentObj = *it;
 
@@ -472,7 +535,7 @@ namespace game {
                 float objRadius = 1.0f; //Needs to be changed per object
 
                 if (glm::distance(playerPosition, objPosition) < objRadius) {
-                    std::cout << "COLLISION with " << currentObj->GetName() << "\n";
+                    //std::cout << "COLLISION with " << currentObj->GetName() << "\n";
                     camera_.SetPosition(lastPosition); //Reset player position
                 }
             }
@@ -543,12 +606,14 @@ namespace game {
                 float objRadius = 1.0f; //Needs to be changed per object
 
                 if (glm::distance(playerPosition, objPosition) < objRadius) {
+                    //printf("collision\n");
                     if (isCrouching) {
+                        //printf("Hidden\n");
                         isHidden = true;
                     }
-                }
-                else {
-                    isHidden = false;
+                    else {
+                        isHidden = false;
+                    }
                 }
               
 
@@ -757,14 +822,23 @@ namespace game {
     }
 
     void Game::CreateHungry(glm::vec3 location) {
-        game::SceneNode* head = CreateInstance("HungryHead", "HungryHead", "TexturedMaterial", "HungrySkin");
-        game::SceneNode* eyes = CreateInstance("HungryEyes", "HungryEyes", "TexturedMaterial", "HungryEyesText", head);
-        game::SceneNode* tongue = CreateInstance("HungryTongue", "HungryTongue", "TexturedMaterial", "HungryTongueText", head);
-        game::SceneNode* torso = CreateInstance("HungryTorso", "HungryTorso", "TexturedMaterial", "HungrySkin", head);
-        game::SceneNode* lArm = CreateInstance("HungryLArm", "HungryLArm", "TexturedMaterial", "HungrySkin", torso);
-        game::SceneNode* rArm = CreateInstance("HungryRArm", "HungryRArm", "TexturedMaterial", "HungrySkin", torso);
-        game::SceneNode* lLeg = CreateInstance("HungrylLeg", "HungryLLeg", "TexturedMaterial", "HungrySkin", torso);
-        game::SceneNode* rLeg = CreateInstance("HungryrLeg", "HungryRLeg", "TexturedMaterial", "HungrySkin", torso);
+        game::SceneNode* head = CreateInstance("HungryHead", "HungryHead", "TexturedMaterial", "HungrySkin"); head->Scale(glm::vec3(0.5, 0.5, 0.5));
+        game::SceneNode* eyes = CreateInstance("HungryEyes", "HungryEyes", "TexturedMaterial", "HungryEyesText", head); eyes->Scale(glm::vec3(0.5, 0.5, 0.5));
+        game::SceneNode* tongue = CreateInstance("HungryTongue", "HungryTongue", "TexturedMaterial", "HungryTongueText", head); tongue->Scale(glm::vec3(0.5, 0.5, 0.5));
+        game::SceneNode* torso = CreateInstance("HungryTorso", "HungryTorso", "TexturedMaterial", "HungrySkin"); torso->Scale(glm::vec3(0.5, 0.5, 0.5));
+        game::SceneNode* lArm = CreateInstance("HungryLArm", "HungryLArm", "TexturedMaterial", "HungrySkin", torso); lArm->Scale(glm::vec3(0.5, 0.5, 0.5));
+        game::SceneNode* rArm = CreateInstance("HungryRArm", "HungryRArm", "TexturedMaterial", "HungrySkin", torso); rArm->Scale(glm::vec3(0.5, 0.5, 0.5));
+        game::SceneNode* lLeg = CreateInstance("HungrylLeg", "HungryLLeg", "TexturedMaterial", "HungrySkin", torso); lLeg->Scale(glm::vec3(0.5, 0.5, 0.5));
+        game::SceneNode* rLeg = CreateInstance("HungryrLeg", "HungryRLeg", "TexturedMaterial", "HungrySkin", torso); rLeg->Scale(glm::vec3(0.5, 0.5, 0.5));
+
+
+        head->SetPosition(glm::vec3(30.0f, 0.0, 30.0f));
+        torso->SetPosition(glm::vec3(30.0f, 0.0, 30.0f));
+
+
+        //0 is for non-enemy, 1 is for patrol, 2 is for chase. 
+        head->SetEnemyState(1);
+
     }
 
     void Game::CreateCabin(glm::vec3 location) {

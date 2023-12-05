@@ -73,6 +73,8 @@ namespace game {
             void CreateProps(int, int, glm::vec3);
             void CreateHungry(glm::vec3);
 
+
+            void EnemyMovement(float);
             void CollisionDetection();
 
             // Create an instance of an object stored in the resource manager

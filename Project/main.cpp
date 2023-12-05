@@ -25,9 +25,9 @@ int main(void){
         app.Init();
         // Setup the main resources and scene in the game
         app.SetupResources();
-        printf("[1]. RESOURCES LOADED\n");
+        //printf("[1]. RESOURCES LOADED\n");
         app.SetupScene();
-        printf("[2]. WORLD LOADED\n");
+        //printf("[2]. WORLD LOADED\n");
 
         // Run game
         app.MainLoop();
