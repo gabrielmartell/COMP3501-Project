@@ -63,6 +63,7 @@ namespace game {
             void InitWindow(void);
             void InitView(void);
             void InitEventHandlers(void);
+            void InitSkybox(void);
  
             // Methods to handle events
             static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
