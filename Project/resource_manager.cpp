@@ -8,6 +8,7 @@
 #include <iostream>
 #include <SOIL/SOIL.h>
 #include <cmath>
+#include <direct.h>
 
 #include "resource_manager.h"
 #include "model_loader.h"
@@ -795,17 +796,16 @@ void ResourceManager::CreatePlane(std::string object_name) {
 }
 
 //!/ Function to create plane with craters
-void ResourceManager::CreatePlaneWithCraters(std::string object_name, GLfloat* heightMap, int gridWidth, int gridHeight, int numQuads) {
+void ResourceManager::CreatePlaneWithCraters(std::string object_name, GLfloat* heightMap, float gridWidth, float gridHeight, int v_gridWidth, int v_gridLength) {
     // Definition of the plane (a simple square in the XZ plane)
 
     //!/ Quad Settings and variables
-    int v_gridWidth = sqrt(numQuads) + 1;
-    int v_gridLength = sqrt(numQuads) + 1;
+    int numQuads = (v_gridWidth - 1) * (v_gridLength - 1);
    
     //!/ Number of vertices and faces to be created
     //!/ Number of vertices must follow the amount of quads
     //!/ Number of faces are pairs of each quad
-	const GLuint vertex_num = (numQuads + 1) * (numQuads + 1); 
+	const GLuint vertex_num = v_gridWidth * v_gridLength; 
     const GLuint face_num = numQuads * 2;
 
     //!/ Number of attributes for vertices and faces
@@ -897,5 +897,45 @@ void ResourceManager::CreatePlaneWithCraters(std::string object_name, GLfloat* h
     // Create resource
     AddResource(Mesh, object_name, vbo, ebo, numQuads * 2 * face_att);
 }
+
+void ResourceManager::LoadCubeMap(const std::string name, const std::vector<std::string>& faces) {
+    GLuint textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+    int width, height;
+    unsigned char* image;
+
+    for (GLuint i = 0; i < faces.size(); i++) {
+        image = SOIL_load_image(faces[i].c_str(), &width, &height, 0, SOIL_LOAD_RGB);
+        if (!image) {
+            
+            //char cwd[1024]; // Buffer to store the path of the current working directory
+
+            //// Retrieve the current working directory
+            //if (_getcwd(cwd, sizeof(cwd)) != nullptr) {
+            //    std::cout << "Current working dir: " << cwd << std::endl;
+            //}
+            //else {
+            //    perror("_getcwd error"); // Print the error if any
+            //}
+
+            throw(std::ios_base::failure(std::string("Error loading cube map texture: ") + faces[i] + ": " + SOIL_last_result()));;
+        }
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+        SOIL_free_image_data(image); // Free the image memory
+    }
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    AddResource(Texture, name, textureID, 0);
+}
+
+
+
 
 } // namespace game;

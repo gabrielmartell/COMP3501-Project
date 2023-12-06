@@ -19,7 +19,7 @@ namespace game {
 
         public:
             // Create scene node from given resources
-            SceneNode(const std::string name, const Resource *geometry, const Resource *material, const Resource *texture = NULL);
+            SceneNode(const std::string name, const Resource *geometry, const Resource *material, const Resource *texture = NULL, SceneNode* parent = NULL);
 
             // Destructor
             ~SceneNode();
@@ -36,11 +36,15 @@ namespace game {
             void SetPosition(glm::vec3 position);
             void SetOrientation(glm::quat orientation);
             void SetScale(glm::vec3 scale);
+            void SetOrbit(glm::vec3, glm::quat);
             
             // Perform transformations on node
             void Translate(glm::vec3 trans);
             void Rotate(glm::quat rot);
             void Scale(glm::vec3 scale);
+
+            void SetEnemyState(int);
+            int GetState();
 
             // Draw the node according to scene parameters in 'camera'
             // variable
@@ -55,6 +59,8 @@ namespace game {
             GLuint GetElementArrayBuffer(void) const;
             GLsizei GetSize(void) const;
             GLuint GetMaterial(void) const;
+            SceneNode* GetParent(void);
+
 
         private:
             std::string name_; // Name of the scene node
@@ -67,6 +73,13 @@ namespace game {
             glm::vec3 position_; // Position of node
             glm::quat orientation_; // Orientation of node
             glm::vec3 scale_; // Scale of node
+            glm::mat4 orbit_ = glm::mat4(1.0);
+            int state_ = 0;
+
+            glm::mat4 current_trans_;
+
+            SceneNode* parent_;
+            
 
             // Set matrices that transform the node in a shader program
             void SetupShader(GLuint program);

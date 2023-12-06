@@ -9,10 +9,11 @@
 
 namespace game {
 
-SceneNode::SceneNode(const std::string name, const Resource *geometry, const Resource *material, const Resource *texture){
+SceneNode::SceneNode(const std::string name, const Resource *geometry, const Resource *material, const Resource *texture, SceneNode* parent){
 
     // Set name of scene node
     name_ = name;
+    parent_ = parent;
 
     // Set geometry
     if (geometry->GetType() == PointSet){
@@ -73,6 +74,9 @@ glm::vec3 SceneNode::GetScale(void) const {
     return scale_;
 }
 
+SceneNode* SceneNode::GetParent() {
+    return parent_;
+}
 
 void SceneNode::SetPosition(glm::vec3 position){
 
@@ -90,6 +94,17 @@ void SceneNode::SetScale(glm::vec3 scale){
 
     scale_ = scale;
 }
+
+void SceneNode::SetOrbit(glm::vec3 pos, glm::quat rotate) {
+    orientation_ *= rotate;
+    orientation_ = glm::normalize(orientation_);
+    orbit_ = (glm::translate(glm::mat4(1.0), glm::vec3(pos.x * -1.0f, pos.y * -1.0f, pos.z * -1.0f)) * glm::mat4_cast(orientation_) * glm::translate(glm::mat4(1.0f), pos));
+}
+void SceneNode::SetEnemyState(int state) {
+    state_ = state;
+
+}
+int SceneNode::GetState() { return state_; };
 
 
 void SceneNode::Translate(glm::vec3 trans){
@@ -191,10 +206,27 @@ void SceneNode::SetupShader(GLuint program){
     glEnableVertexAttribArray(tex_att);
 
     // World transformation
-    glm::mat4 scaling = glm::scale(glm::mat4(1.0), scale_);
-    glm::mat4 rotation = glm::mat4_cast(orientation_);
-    glm::mat4 translation = glm::translate(glm::mat4(1.0), position_);
-    glm::mat4 transf = translation * rotation * scaling;
+
+    //NEED TO FIX PARENT TRANSFORMATION
+    glm::mat4 transf;
+
+    if (parent_ != NULL) {
+        glm::mat4 localTrans;
+
+        localTrans = glm::translate(glm::mat4(1.0), GetPosition());
+        localTrans *= glm::mat4_cast(GetOrientation());
+        localTrans *= orbit_;
+
+        transf = parent_->current_trans_ * localTrans;
+    }
+    else {
+        glm::mat4 scaling = glm::scale(glm::mat4(1.0), scale_);
+        glm::mat4 rotation = glm::mat4_cast(orientation_);
+        glm::mat4 translation = glm::translate(glm::mat4(1.0), position_);
+
+        transf = translation * orbit_ * rotation * scaling;
+    }
+    current_trans_ = transf;
 
     GLint world_mat = glGetUniformLocation(program, "world_mat");
     glUniformMatrix4fv(world_mat, 1, GL_FALSE, glm::value_ptr(transf));

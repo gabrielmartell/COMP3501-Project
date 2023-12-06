@@ -55,6 +55,8 @@ namespace game {
             glm::vec3 side_; // Initial side vector
             glm::mat4 view_matrix_; // View matrix
             glm::mat4 projection_matrix_; // Projection matrix
+            float cumulativePitch_ = 0.0f;  // Cumulative pitch angle
+            float cumulativeYaw_ = 0.0f;    // Cumulative yaw angle
 
             // Create view matrix from current camera parameters
             void SetupViewMatrix(void);

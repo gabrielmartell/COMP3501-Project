@@ -63,23 +63,29 @@ namespace game {
             void InitWindow(void);
             void InitView(void);
             void InitEventHandlers(void);
+            void InitSkybox(void);
  
             // Methods to handle events
             static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
             static void ResizeCallback(GLFWwindow* window, int width, int height);
 
-            // Asteroid field
-            // Create instance of one asteroid
-            Asteroid *CreateAsteroidInstance(std::string entity_name, std::string object_name, std::string material_name);
-            // Create entire random asteroid field
-            void CreateAsteroidField(int num_asteroids = 1500);
+
+            void CreateCabin(glm::vec3);
+            void CreateProps(int, int, glm::vec3);
+            void CreateHungry(glm::vec3);
+
+
+            void EnemyMovement(float);
+            void CollisionDetection();
 
             // Create an instance of an object stored in the resource manager
-            SceneNode *CreateInstance(std::string entity_name, std::string object_name, std::string material_name, std::string texture_name = std::string(""));
+            SceneNode *CreateInstance(std::string entity_name, std::string object_name, std::string material_name, std::string texture_name = std::string(""), SceneNode* parent = NULL);
 
             //!/ Height map function
-            GLfloat* CreateHeightMap(float numQuads, float craterDep, float craterRad, glm::vec2 craterPos);
-            float calculateY(float dep, float rad, float dis);
+            GLfloat* CreateHeightMap(int v_gWidth, int v_gLength, float hillHeight);
+
+            //Get what your height should be based on current position
+            float GetHeightFromMap(float x, float z, int v_gWidth, int v_gLength);
 
     }; // class Game
 

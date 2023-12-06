@@ -20,11 +20,15 @@ int main(void){
     game::Game app; // Game application
 
     try {
+        printf("LOADING GAME...\n");
         // Initialize game
         app.Init();
         // Setup the main resources and scene in the game
         app.SetupResources();
+        //printf("[1]. RESOURCES LOADED\n");
         app.SetupScene();
+        //printf("[2]. WORLD LOADED\n");
+
         // Run game
         app.MainLoop();
     }
