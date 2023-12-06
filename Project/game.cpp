@@ -77,7 +77,7 @@ namespace game {
         InitWindow();
         InitView();
         InitEventHandlers();
-        InitSkybox();
+        
 
         // Set variables
         animating_ = true;
@@ -143,73 +143,7 @@ namespace game {
         camera_.SetProjection(camera_fov_g, camera_near_clip_distance_g, camera_far_clip_distance_g, width, height);
     }
 
-    void Game::InitSkybox() {
-        GLfloat skyboxVertices[] = {
-            // Back face
-            -1.0f, -1.0f, -1.0f, // Bottom-left
-             1.0f,  1.0f, -1.0f, // top-right
-             1.0f, -1.0f, -1.0f, // bottom-right         
-             1.0f,  1.0f, -1.0f, // top-right
-            -1.0f, -1.0f, -1.0f, // bottom-left
-            -1.0f,  1.0f, -1.0f, // top-left
-            // Front face
-            -1.0f, -1.0f,  1.0f, // bottom-left
-             1.0f, -1.0f,  1.0f, // bottom-right
-             1.0f,  1.0f,  1.0f, // top-right
-             1.0f,  1.0f,  1.0f, // top-right
-            -1.0f,  1.0f,  1.0f, // top-left
-            -1.0f, -1.0f,  1.0f, // bottom-left
-            // Left face
-            -1.0f,  1.0f,  1.0f, // top-right
-            -1.0f,  1.0f, -1.0f, // top-left
-            -1.0f, -1.0f, -1.0f, // bottom-left
-            -1.0f, -1.0f, -1.0f, // bottom-left
-            -1.0f, -1.0f,  1.0f, // bottom-right
-            -1.0f,  1.0f,  1.0f, // top-right
-            // Right face
-             1.0f,  1.0f,  1.0f, // top-left
-             1.0f, -1.0f, -1.0f, // bottom-right
-             1.0f,  1.0f, -1.0f, // top-right         
-             1.0f, -1.0f, -1.0f, // bottom-right
-             1.0f,  1.0f,  1.0f, // top-left
-             1.0f, -1.0f,  1.0f, // bottom-left     
-             // Bottom face
-             -1.0f, -1.0f, -1.0f, // top-right
-              1.0f, -1.0f, -1.0f, // top-left
-              1.0f, -1.0f,  1.0f, // bottom-left
-              1.0f, -1.0f,  1.0f, // bottom-left
-             -1.0f, -1.0f,  1.0f, // bottom-right
-             -1.0f, -1.0f, -1.0f, // top-right
-             // Top face
-             -1.0f,  1.0f, -1.0f, // top-left
-              1.0f,  1.0f,  1.0f, // bottom-right
-              1.0f,  1.0f, -1.0f, // top-right     
-              1.0f,  1.0f,  1.0f, // bottom-right
-             -1.0f,  1.0f, -1.0f, // top-left
-             -1.0f,  1.0f,  1.0f  // bottom-left        
-        };
-
-        for (int i = 0; i < sizeof(skyboxVertices) / sizeof(skyboxVertices[0]); i++) {
-            skyboxVertices[i] *= 500.0f;
-        }
-
-        // Generate and bind the Vertex Array Object
-        glGenVertexArrays(1, &skyboxVAO);
-        glBindVertexArray(skyboxVAO);
-
-        // Generate and bind the Vertex Buffer Object, upload the vertex data
-        glGenBuffers(1, &skyboxVBO);
-        glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), skyboxVertices, GL_STATIC_DRAW);
-
-        // Set the vertex attributes (only position data for the cube)
-        glEnableVertexAttribArray(0); // Enable the vertex attribute at location 0
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-
-        // Unbind the VBO and VAO
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
-    }
+   
 
 
     void Game::InitEventHandlers(void) {
@@ -238,26 +172,7 @@ namespace game {
         // Create geometry of the "wall"
         resman_.CreateTorus("TorusMesh");
 
-        //Loads the Skybox
-        //For now, All 6 sides are the same image, but this can ne changed
-        std::vector<std::string> faces = {
-        "../../../skybox.jpg",
-        "../../../skybox.jpg",
-        "../../../skybox.jpg",
-        "../../../skybox.jpg",
-        "../../../skybox.jpg",
-        "../../../skybox.jpg"
-        };
-        resman_.LoadCubeMap("Skybox", faces);
-
-        Resource* skyboxTextureResource = resman_.GetResource("Skybox");
-        if (skyboxTextureResource != NULL) {
-            skyboxTextureID = skyboxTextureResource->GetResource();
-        }
-        else {
-            // Handle the error if the skybox resource is not found
-            std::cerr << "Failed to load skybox texture." << std::endl;
-        }
+        
 
 
         /*
@@ -270,9 +185,6 @@ namespace game {
         resman_.LoadResource(Material, "NormalMapMaterial", filename.c_str());
         printf("|");
 
-        filename = std::string(MATERIAL_DIRECTORY) + std::string("/skybox");
-        resman_.LoadResource(Material, "SkyBoxMaterial", filename.c_str());
-        printf("|");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("/textured_material");
         resman_.LoadResource(Material, "TexturedMaterial", filename.c_str());
@@ -364,6 +276,10 @@ namespace game {
         resman_.LoadResource(Texture, "NormalMap", filename.c_str());
         printf("|");
 
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("/skybox.jpg");
+        resman_.LoadResource(Texture, "Skybox", filename.c_str());
+        printf("|");
+
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/mushroom_text.png");
         resman_.LoadResource(Texture, "MushroomTexture", filename.c_str());
         printf("|");
@@ -405,6 +321,37 @@ namespace game {
 
         // Create an instance of the map
         game::SceneNode* map = CreateInstance("MapInstance1", "GameMapMesh", "TexturedMaterial", "TreeLeaves");
+        
+        /*
+           ====================================================
+           Skybox Creation
+           ====================================================
+           */
+        game::SceneNode* skyboxTop = CreateInstance("SkyboxInstance1", "GameMapMesh", "TexturedMaterial", "Skybox");
+        game::SceneNode* skyboxFront = CreateInstance("SkyboxInstance2", "GameMapMesh", "TexturedMaterial", "Skybox");
+        game::SceneNode* skyboxBack = CreateInstance("SkyboxInstance3", "GameMapMesh", "TexturedMaterial", "Skybox");
+        game::SceneNode* skyboxLeft = CreateInstance("SkyboxInstance4", "GameMapMesh", "TexturedMaterial", "Skybox");
+        game::SceneNode* skyboxRight = CreateInstance("SkyboxInstance5", "GameMapMesh", "TexturedMaterial", "Skybox");
+
+        skyboxTop->SetPosition(glm::vec3(-100, 7, -100));
+        skyboxTop->SetScale(glm::vec3(20, 20, 20));
+
+        skyboxFront->SetPosition(glm::vec3(-100, 100, -100));
+        skyboxFront->SetScale(glm::vec3(20, 20, 20));
+        skyboxFront->Rotate(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0)));
+
+        skyboxBack->SetPosition(glm::vec3(-100, 100, 100));
+        skyboxBack->SetScale(glm::vec3(20, 20, 20));
+        skyboxBack->Rotate(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0)));
+       
+        skyboxLeft->SetPosition(glm::vec3(-100, 100, -100));
+        skyboxLeft->SetScale(glm::vec3(20, 20, 20));
+        skyboxLeft->Rotate(glm::angleAxis(glm::radians(-90.0f), glm::vec3(0.0, 0.0, 1.0)));
+
+        skyboxRight->SetPosition(glm::vec3(100, 100, -100));
+        skyboxRight->SetScale(glm::vec3(20, 20, 20));
+        skyboxRight->Rotate(glm::angleAxis(glm::radians(-90.0f), glm::vec3(0.0, 0.0, 1.0)));
+        
     }
 
 
@@ -424,31 +371,14 @@ namespace game {
        // game::SceneNode* mushroom = CreateInstance("Mushroom", "Mushroom", "TexturedMaterial", "MushroomTexture");
         //mushroom->SetScale(glm::vec3(0.1, 0.1, 0.1));
 
-       
+        
         glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
        
         // Loop while the user did not close the window
         while (!glfwWindowShouldClose(window_)) {
-            /*
-            ====================================================
-            DRAW THE SKYBOX FIRST
-            ====================================================
-            */
+           
 
-            GLuint skyboxShaderProgramID;
-            Resource* skyboxShaderResource = resman_.GetResource("SkyBoxMaterial");
-            if (skyboxShaderResource != NULL) {
-                skyboxShaderProgramID = skyboxShaderResource->GetResource();
-            }
-
-            glDepthMask(GL_FALSE); // Disable depth write
-            glUseProgram(skyboxShaderProgramID); // Activate skybox shader
-            glBindVertexArray(skyboxVAO);
-            glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTextureID); // Use the cube map texture
-            glDrawArrays(GL_TRIANGLES, 0, 36); // Draw the skybox
-            glBindVertexArray(0);
-            glDepthMask(GL_TRUE);
-            //End Skybox
+            
 
             glfwGetCursorPos(window_, &xpos, &ypos);
             glfwSetCursorPos(window_, window_width_g / 2, window_height_g / 2);
@@ -498,6 +428,7 @@ namespace game {
 
                     // Animate the wall
                     SceneNode* node = scene_.GetNode("MapInstance1");
+                    //SceneNode* node2 = scene_.GetNode("SkyboxInstance");
                     //SceneNode* node = scene_.GetNode("CratePlaneInstance1");
                     //glm::quat rotation = glm::angleAxis(glm::pi<float>() / 180.0f, glm::vec3(0.0, 1.0, 0.0));
                     //node->Rotate(rotation);

@@ -910,15 +910,15 @@ void ResourceManager::LoadCubeMap(const std::string name, const std::vector<std:
         image = SOIL_load_image(faces[i].c_str(), &width, &height, 0, SOIL_LOAD_RGB);
         if (!image) {
             
-            char cwd[1024]; // Buffer to store the path of the current working directory
+            //char cwd[1024]; // Buffer to store the path of the current working directory
 
-            // Retrieve the current working directory
-            if (_getcwd(cwd, sizeof(cwd)) != nullptr) {
-                std::cout << "Current working dir: " << cwd << std::endl;
-            }
-            else {
-                perror("_getcwd error"); // Print the error if any
-            }
+            //// Retrieve the current working directory
+            //if (_getcwd(cwd, sizeof(cwd)) != nullptr) {
+            //    std::cout << "Current working dir: " << cwd << std::endl;
+            //}
+            //else {
+            //    perror("_getcwd error"); // Print the error if any
+            //}
 
             throw(std::ios_base::failure(std::string("Error loading cube map texture: ") + faces[i] + ": " + SOIL_last_result()));;
         }
