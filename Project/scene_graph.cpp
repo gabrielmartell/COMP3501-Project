@@ -44,11 +44,24 @@ SceneNode *SceneGraph::CreateNode(std::string node_name, Resource *geometry, Res
 }
 
 
+
 void SceneGraph::AddNode(SceneNode *node){
 
     node_.push_back(node);
 }
 
+//!/ Function to remove nodes from scenegraph
+void SceneGraph::RemoveNode(std::string node_name) {
+    //!/ Grab the node
+    SceneNode* removedNode = GetNode(node_name);
+
+    //!/ Remove the node
+    auto it = std::remove(node_.begin(), node_.end(), removedNode);
+
+    //!/ Erase the node from vector
+    node_.erase(it);
+    //delete removedNode;
+}
 
 SceneNode *SceneGraph::GetNode(std::string node_name) const {
 

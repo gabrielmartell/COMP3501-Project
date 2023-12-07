@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 
 # Name of project
-set(PROJ_NAME Project)
+set(PROJ_NAME NormalMappingDemo)
 project(${PROJ_NAME})
 
 # Specify project files: header files and source files
@@ -43,7 +43,7 @@ include_directories(${OPENGL_INCLUDE_DIR})
 target_link_libraries(${PROJ_NAME} ${OPENGL_gl_LIBRARY})
 
 # Other libraries needed
-set(LIBRARY_PATH D:/Library)
+set(LIBRARY_PATH C:/Users/itsmy/Desktop/3501/Libraries)
 include_directories(${LIBRARY_PATH}/include)
 if(NOT WIN32)
     find_library(GLEW_LIBRARY GLEW)

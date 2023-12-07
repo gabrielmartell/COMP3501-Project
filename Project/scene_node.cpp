@@ -100,6 +100,7 @@ void SceneNode::SetOrbit(glm::vec3 pos, glm::quat rotate) {
     orientation_ = glm::normalize(orientation_);
     orbit_ = (glm::translate(glm::mat4(1.0), glm::vec3(pos.x * -1.0f, pos.y * -1.0f, pos.z * -1.0f)) * glm::mat4_cast(orientation_) * glm::translate(glm::mat4(1.0f), pos));
 }
+
 void SceneNode::SetEnemyState(int state) {
     state_ = state;
 

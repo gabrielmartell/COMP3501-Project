@@ -8,7 +8,6 @@
 #include <iostream>
 #include <SOIL/SOIL.h>
 #include <cmath>
-#include <direct.h>
 
 #include "resource_manager.h"
 #include "model_loader.h"
@@ -796,7 +795,7 @@ void ResourceManager::CreatePlane(std::string object_name) {
 }
 
 //!/ Function to create plane with craters
-void ResourceManager::CreatePlaneWithCraters(std::string object_name, GLfloat* heightMap, float gridWidth, float gridHeight, int v_gridWidth, int v_gridLength) {
+void ResourceManager::CreateMapPlane(std::string object_name, GLfloat* heightMap, float gridWidth, float gridHeight, int v_gridWidth, int v_gridLength) {
     // Definition of the plane (a simple square in the XZ plane)
 
     //!/ Quad Settings and variables
@@ -898,44 +897,62 @@ void ResourceManager::CreatePlaneWithCraters(std::string object_name, GLfloat* h
     AddResource(Mesh, object_name, vbo, ebo, numQuads * 2 * face_att);
 }
 
-void ResourceManager::LoadCubeMap(const std::string name, const std::vector<std::string>& faces) {
-    GLuint textureID;
-    glGenTextures(1, &textureID);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+void ResourceManager::CreateBugParticles(std::string object_name, int num_particles) {
 
-    int width, height;
-    unsigned char* image;
+    // Create a set of points which will be the particles
+    // This is similar to drawing a sphere: we will sample points on a sphere, but will allow them to also deviate a bit from the sphere along the normal (change of radius)
 
-    for (GLuint i = 0; i < faces.size(); i++) {
-        image = SOIL_load_image(faces[i].c_str(), &width, &height, 0, SOIL_LOAD_RGB);
-        if (!image) {
-            
-            //char cwd[1024]; // Buffer to store the path of the current working directory
+    // Data buffer
+    GLfloat* particle = NULL;
 
-            //// Retrieve the current working directory
-            //if (_getcwd(cwd, sizeof(cwd)) != nullptr) {
-            //    std::cout << "Current working dir: " << cwd << std::endl;
-            //}
-            //else {
-            //    perror("_getcwd error"); // Print the error if any
-            //}
+    // Number of attributes per particle: position (3), normal (3), and color (3), texture coordinates (2)
+    const int particle_att = 11;
 
-            throw(std::ios_base::failure(std::string("Error loading cube map texture: ") + faces[i] + ": " + SOIL_last_result()));;
-        }
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-        SOIL_free_image_data(image); // Free the image memory
+    // Allocate memory for buffer
+    try {
+        particle = new GLfloat[num_particles * particle_att];
+    }
+    catch (std::exception& e) {
+        throw e;
     }
 
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    float u, v, w, theta, phi, radius; // Work variables
 
-    AddResource(Texture, name, textureID, 0);
+    for (int i = 0; i < num_particles; i++) {
+
+        //!/ Create all values needed to place and move the particles.
+        radius = 0.5;
+        theta = 2.0 * glm::pi<float>() * ((double)rand() / RAND_MAX);
+        phi = glm::acos(2.0 * ((double)rand() / RAND_MAX) - 1.0);
+        u = radius * glm::sin(phi) * glm::cos(theta);
+        v = radius * glm::cos(phi);
+        w = radius * glm::sin(phi) * glm::sin(theta);
+
+        //!/ I needed the original angles so I could continue the movment instead of adding movement and making it move as just a sphere
+        glm::vec3 normal(theta, 0.0, phi);
+        //!/ Applying positions to make it into a nice sphere
+        glm::vec3 position(u, v, w);
+        glm::vec3 color(i / (float)num_particles, 0.0, 1.0 - (i / (float)num_particles)); // We can use the color for debug, if needed
+
+        // Add vectors to the data buffer
+        for (int k = 0; k < 3; k++) {
+            particle[i * particle_att + k] = position[k];
+            particle[i * particle_att + k + 3] = normal[k];
+            particle[i * particle_att + k + 6] = color[k];
+        }
+    }
+
+    // Create OpenGL buffer and copy data
+    GLuint vbo;
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, num_particles * particle_att * sizeof(GLfloat), particle, GL_STATIC_DRAW);
+
+    // Free data buffers
+    delete[] particle;
+
+    // Create resource
+    AddResource(PointSet, object_name, vbo, 0, num_particles);
 }
-
-
-
 
 } // namespace game;
