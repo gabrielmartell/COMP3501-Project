@@ -12,6 +12,8 @@
 // Default extensions for different shader source files
 #define VERTEX_PROGRAM_EXTENSION "_vp.glsl"
 #define FRAGMENT_PROGRAM_EXTENSION "_fp.glsl"
+#define GEOMETRY_PROGRAM_EXTENSION "_gp.glsl"
+
 
 namespace game {
 
@@ -41,6 +43,8 @@ namespace game {
             //!/ Create the geometry for the map
             void CreateMapPlane(std::string object_name, GLfloat* heightMap, float gridWidth, float gridHeight, int v_gridWidth, int v_gridLength);
             void CreateBugParticles(std::string object_name, int num_particles = 500);
+            void CreateSphereParticles(std::string object_name, glm::vec3 pos, int num_particles = 500, int type = 1);
+
 
         private:
             // List storing all resources

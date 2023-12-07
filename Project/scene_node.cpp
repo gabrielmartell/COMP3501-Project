@@ -208,7 +208,6 @@ void SceneNode::SetupShader(GLuint program){
 
     // World transformation
 
-    //NEED TO FIX PARENT TRANSFORMATION
     glm::mat4 transf;
 
     if (parent_ != NULL) {

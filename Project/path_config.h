@@ -1,1 +1,1 @@
-#define MATERIAL_DIRECTORY "C:\\Users\\itsmy\\Desktop\\3501\\COMP3501-Project-hungry-ai\\Project"
+#define MATERIAL_DIRECTORY "C:\\Users\\H4kmo\\source\\repos\\gabrielmartell\\Project_old4\\Project"

@@ -127,6 +127,24 @@ namespace game {
         // Set up z-buffer
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
+        /*
+        // Select particle blending or not
+        if (blending_) {
+            // Disable depth write
+            glDepthMask(GL_FALSE);
+
+            // Enable blending
+            glEnable(GL_BLEND);
+            //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // Simpler form
+            glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glBlendEquationSeparate(GL_FUNC_ADD, GL_MAX);
+        }
+        else {
+            // Enable z-buffer
+            glDepthMask(GL_TRUE);
+            glDepthFunc(GL_LESS);
+        }
+        */
 
         // Set viewport
         int width, height;
@@ -153,21 +171,6 @@ namespace game {
 
 
     void Game::SetupResources(void) {
-
-        //!/ Create the heightMap
-        //!/ The values can be changed at the top since they're global
-        //!/ I swear there's a good reason
-
-        heightMap = CreateHeightMap(v_gWidthReal, v_gLengthReal, 3.0);
-        //!/ Create geometry of the "Plane"
-        //! This function uses these parameters, Object Name, Height Map, Grid Width, Grid Length, Number of Quads
-        resman_.CreateMapPlane("GameMapMesh", heightMap, 50, 50, 50, 50);
-        printf("    MAP [|]\n");
-
-        // Create geometry of the "wall"
-        resman_.CreateTorus("TorusMesh");
-        resman_.CreateBugParticles("BeeParticles");
-
 
         /*
         ======================
@@ -318,6 +321,23 @@ namespace game {
 
         printf("|]\n");
 
+
+        //!/ Create the heightMap
+        //!/ The values can be changed at the top since they're global
+        //!/ I swear there's a good reason
+        printf("    MAP [");
+        heightMap = CreateHeightMap(v_gWidthReal, v_gLengthReal, 3.0);
+
+        //!/ Create geometry of the "Plane"
+        //! This function uses these parameters, Object Name, Height Map, Grid Width, Grid Length, Number of Quads
+        resman_.CreateMapPlane("GameMapMesh", heightMap, 50, 50, 50, 50);
+        printf("|");
+
+        // Create geometry of the "wall"
+        resman_.CreateBugParticles("BeeParticles", 10);
+        printf("|]\n");
+
+
         // Setup drawing to texture
         scene_.SetupDrawToTexture();
     }
@@ -340,6 +360,7 @@ namespace game {
 
         CreateHungry(hungry_location);
 
+
         // Create an instance of the map
         //game::SceneNode* map = CreateInstance("MapInstance1", "GameMapMesh", "TexturedMaterial", "TreeLeaves");
         
@@ -354,7 +375,7 @@ namespace game {
         game::SceneNode* skyboxLeft = CreateInstance("SkyboxInstance4", "GameMapMesh", "TexturedMaterial", "Skybox");
         game::SceneNode* skyboxRight = CreateInstance("SkyboxInstance5", "GameMapMesh", "TexturedMaterial", "Skybox");
 
-        int skyboxScale = 10;
+        int skyboxScale = 15;
 
         skyboxTop->SetPosition(glm::vec3(-100, 7, -100));
         skyboxTop->SetScale(glm::vec3(skyboxScale, skyboxScale, skyboxScale));
@@ -389,12 +410,6 @@ namespace game {
         float mouseSpeed = 0.01f;
 
         double xpos, ypos;
-
-        //game::SceneNode* treetrunk1 = CreateInstance("TreeTrunk", "TreeTrunk", "TexturedMaterial", "MushroomTexture");
-
-       // game::SceneNode* mushroom = CreateInstance("Mushroom", "Mushroom", "TexturedMaterial", "MushroomTexture");
-        //mushroom->SetScale(glm::vec3(0.1, 0.1, 0.1));
-
        
         glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
        
@@ -446,9 +461,7 @@ namespace game {
 
                     //!/ Grab the map instance
                     SceneNode* node = scene_.GetNode("MapInstance1");
-                    //SceneNode* node = scene_.GetNode("CratePlaneInstance1");
-                    //glm::quat rotation = glm::angleAxis(glm::pi<float>() / 180.0f, glm::vec3(0.0, 1.0, 0.0));
-                    //node->Rotate(rotation);
+
 
                     last_time = current_time;
                 }
@@ -514,7 +527,6 @@ namespace game {
             glfwPollEvents();
 
             horizontalAngle = 0.0f;
-            // vertical angle : 0, look at the horizon
             verticalAngle = 0.0f;
 
         }
@@ -730,6 +742,8 @@ namespace game {
                 float objRadius = 1.0f;
 
                 if (glm::distance(playerPosition, objPosition) < objRadius) {
+                    //printf("[UPDATE] Mushroom Collected\n");
+
                     if (gameScore.x == 0) {
                         gameScore.x += 1;
                         scene_.RemoveNode(currentObj->GetName());
@@ -739,25 +753,29 @@ namespace game {
 
             // Collision for Bees
             if ((currentObj->GetName()).find("Bees") != std::string::npos) {
-                /*glm::vec3 objPosition = currentObj->GetPosition();
-                objPosition.y = heightMap[(int)(playerPosition.z + (playerPosition.x * 50))];
-                float objRadius = 0.8f;
+                glm::vec3 objPosition = currentObj->GetPosition();
+                objPosition.y = (heightMap[(int)(playerPosition.z + (playerPosition.x * 50))]) - 1;
+                float objRadius = 2;
 
+                //printf("%f\n", glm::distance(playerPosition, objPosition));
                 if (glm::distance(playerPosition, objPosition) < objRadius) {
+                    //printf("[UPDATE] Bee Collected\n");
                     if (gameScore.y == 0) {
                         gameScore.y += 1;
                         scene_.RemoveNode(currentObj->GetName());
                     }
-                }*/
+                }
             }
 
             // Collision for Nail
             if ((currentObj->GetName()).find("Nail") != std::string::npos) {
                 glm::vec3 objPosition = currentObj->GetPosition();
-                objPosition.y = heightMap[(int)(playerPosition.z + (playerPosition.x * 50))];
+                objPosition.y = heightMap[(int)(playerPosition.z + (playerPosition.x * 50))] + 1;
                 float objRadius = 0.8f;
 
                 if (glm::distance(playerPosition, objPosition) < objRadius) {
+                    //printf("[UPDATE] Nail Collected\n");
+
                     if (gameScore.z == 0) {
                         gameScore.z += 1;
                         scene_.RemoveNode(currentObj->GetName());
@@ -1155,7 +1173,7 @@ namespace game {
             std::stringstream ss;
             ss << i;
             std::string index = ss.str();
-            std::string name = "Bee" + index;
+            std::string name = "Bees" + index;
 
             game::SceneNode* bee = CreateInstance(name, "BeeParticles", "SwarmMaterial");
             bool locationFound = false;

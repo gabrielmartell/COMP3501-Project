@@ -81,31 +81,60 @@ void ResourceManager::LoadMaterial(const std::string name, const char *prefix){
 
     // Create a shader from the vertex program source code
     GLuint vs = glCreateShader(GL_VERTEX_SHADER);
-    const char *source_vp = vp.c_str();
+    const char* source_vp = vp.c_str();
     glShaderSource(vs, 1, &source_vp, NULL);
     glCompileShader(vs);
 
     // Check if shader compiled successfully
     GLint status;
     glGetShaderiv(vs, GL_COMPILE_STATUS, &status);
-    if (status != GL_TRUE){
+    if (status != GL_TRUE) {
         char buffer[512];
         glGetShaderInfoLog(vs, 512, NULL, buffer);
-        throw(std::ios_base::failure(std::string("Error compiling vertex shader: ")+std::string(buffer)));
+        throw(std::ios_base::failure(std::string("Error compiling vertex shader: ") + std::string(buffer)));
     }
 
     // Create a shader from the fragment program source code
     GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
-    const char *source_fp = fp.c_str();
+    const char* source_fp = fp.c_str();
     glShaderSource(fs, 1, &source_fp, NULL);
     glCompileShader(fs);
 
     // Check if shader compiled successfully
     glGetShaderiv(fs, GL_COMPILE_STATUS, &status);
-    if (status != GL_TRUE){
+    if (status != GL_TRUE) {
         char buffer[512];
         glGetShaderInfoLog(fs, 512, NULL, buffer);
-        throw(std::ios_base::failure(std::string("Error compiling fragment shader: ")+std::string(buffer)));
+        throw(std::ios_base::failure(std::string("Error compiling fragment shader: ") + std::string(buffer)));
+    }
+
+    // Try to also load a geometry shader
+    filename = std::string(prefix) + std::string(GEOMETRY_PROGRAM_EXTENSION);
+    bool geometry_program = false;
+    std::string gp = "";
+    GLuint gs;
+    try {
+        gp = LoadTextFile(filename.c_str());
+        geometry_program = true;
+    }
+    catch (std::exception& e) {
+    }
+
+    if (geometry_program) {
+        // Create a shader from the geometry program source code
+        gs = glCreateShader(GL_GEOMETRY_SHADER);
+        const char* source_gp = gp.c_str();
+        glShaderSource(gs, 1, &source_gp, NULL);
+        glCompileShader(gs);
+
+        // Check if shader compiled successfully
+        GLint status;
+        glGetShaderiv(gs, GL_COMPILE_STATUS, &status);
+        if (status != GL_TRUE) {
+            char buffer[512];
+            glGetShaderInfoLog(gs, 512, NULL, buffer);
+            throw(std::ios_base::failure(std::string("Error compiling geometry shader: ") + std::string(buffer)));
+        }
     }
 
     // Create a shader program linking both vertex and fragment shaders
@@ -113,20 +142,26 @@ void ResourceManager::LoadMaterial(const std::string name, const char *prefix){
     GLuint sp = glCreateProgram();
     glAttachShader(sp, vs);
     glAttachShader(sp, fs);
+    if (geometry_program) {
+        glAttachShader(sp, gs);
+    }
     glLinkProgram(sp);
 
     // Check if shaders were linked successfully
     glGetProgramiv(sp, GL_LINK_STATUS, &status);
-    if (status != GL_TRUE){
+    if (status != GL_TRUE) {
         char buffer[512];
         glGetShaderInfoLog(sp, 512, NULL, buffer);
-        throw(std::ios_base::failure(std::string("Error linking shaders: ")+std::string(buffer)));
+        throw(std::ios_base::failure(std::string("Error linking shaders: ") + std::string(buffer)));
     }
 
     // Delete memory used by shaders, since they were already compiled
     // and linked
     glDeleteShader(vs);
     glDeleteShader(fs);
+    if (geometry_program) {
+        glDeleteShader(gs);
+    }
 
     // Add a resource for the shader program
     AddResource(Material, name, sp, 0);
@@ -954,5 +989,4 @@ void ResourceManager::CreateBugParticles(std::string object_name, int num_partic
     // Create resource
     AddResource(PointSet, object_name, vbo, 0, num_particles);
 }
-
 } // namespace game;
