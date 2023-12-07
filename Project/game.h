@@ -6,6 +6,8 @@
 #define GLEW_STATIC
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "scene_graph.h"
 #include "resource_manager.h"
@@ -53,8 +55,12 @@ namespace game {
 
             // Camera abstraction
             Camera camera_;
-
+            
+            //!/ HeightMap variable
             GLfloat* heightMap;
+
+            //!/ Collectible variables
+            glm::vec4 gameScore;
 
             // Flag to turn animation on/off
             bool animating_;
@@ -63,18 +69,18 @@ namespace game {
             void InitWindow(void);
             void InitView(void);
             void InitEventHandlers(void);
-            void InitSkybox(void);
  
             // Methods to handle events
             static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
             static void ResizeCallback(GLFWwindow* window, int width, int height);
 
-
+            //!/ Cabin, Tree, Bushes, Collectibles and Hungry man spawning
             void CreateCabin(glm::vec3);
             void CreateProps(int, int, glm::vec3);
+            void CreateCollectibles(int, int, int, glm::vec3);
             void CreateHungry(glm::vec3);
 
-
+            //!/ Enemy Movement and Collisions
             void EnemyMovement(float);
             void CollisionDetection();
 
@@ -84,7 +90,7 @@ namespace game {
             //!/ Height map function
             GLfloat* CreateHeightMap(int v_gWidth, int v_gLength, float hillHeight);
 
-            //Get what your height should be based on current position
+            //!/ Get accurate y height from map function
             float GetHeightFromMap(float x, float z, int v_gWidth, int v_gLength);
 
     }; // class Game

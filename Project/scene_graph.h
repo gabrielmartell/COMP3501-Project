@@ -36,6 +36,7 @@ namespace game {
             SceneNode *CreateNode(std::string node_name, Resource *geometry, Resource *material, Resource *texture = NULL, SceneNode *parent = NULL);
             // Add an already-created node
             void AddNode(SceneNode *node);
+            void RemoveNode(std::string node_name);
             // Find a scene node with a specific name
             SceneNode *GetNode(std::string node_name) const;
             // Get node const iterator
