@@ -179,6 +179,11 @@ namespace game {
         resman_.LoadResource(Material, "NormalMapMaterial", filename.c_str());
         printf("|");
 
+        // Load material for screen-space effect
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("/screen_space");
+        resman_.LoadResource(Material, "ScreenSpaceMaterial", filename.c_str());
+        printf("|");
+
         filename = std::string(MATERIAL_DIRECTORY) + std::string("/textured_material");
         resman_.LoadResource(Material, "TexturedMaterial", filename.c_str());
         printf("|");
@@ -308,6 +313,9 @@ namespace game {
         resman_.LoadResource(Texture, "HungryTongueText", filename.c_str());
 
         printf("|]\n");
+
+        // Setup drawing to texture
+        scene_.SetupDrawToTexture();
     }
 
     void Game::SetupScene(void) {
@@ -329,7 +337,41 @@ namespace game {
         CreateHungry(hungry_location);
 
         // Create an instance of the map
+        //game::SceneNode* map = CreateInstance("MapInstance1", "GameMapMesh", "TexturedMaterial", "TreeLeaves");
+        
+      /*
+        ====================================================
+        Skybox Creation
+        ====================================================
+      */
+        game::SceneNode* skyboxTop = CreateInstance("SkyboxInstance1", "GameMapMesh", "TexturedMaterial", "Skybox");
+        game::SceneNode* skyboxFront = CreateInstance("SkyboxInstance2", "GameMapMesh", "TexturedMaterial", "Skybox");
+        game::SceneNode* skyboxBack = CreateInstance("SkyboxInstance3", "GameMapMesh", "TexturedMaterial", "Skybox");
+        game::SceneNode* skyboxLeft = CreateInstance("SkyboxInstance4", "GameMapMesh", "TexturedMaterial", "Skybox");
+        game::SceneNode* skyboxRight = CreateInstance("SkyboxInstance5", "GameMapMesh", "TexturedMaterial", "Skybox");
+
+        skyboxTop->SetPosition(glm::vec3(-100, 7, -100));
+        skyboxTop->SetScale(glm::vec3(20, 20, 20));
+
+        skyboxFront->SetPosition(glm::vec3(-100, 100, -100));
+        skyboxFront->SetScale(glm::vec3(20, 20, 20));
+        skyboxFront->Rotate(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0)));
+
+        skyboxBack->SetPosition(glm::vec3(-100, 100, 100));
+        skyboxBack->SetScale(glm::vec3(20, 20, 20));
+        skyboxBack->Rotate(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0)));
+       
+        skyboxLeft->SetPosition(glm::vec3(-100, 100, -100));
+        skyboxLeft->SetScale(glm::vec3(20, 20, 20));
+        skyboxLeft->Rotate(glm::angleAxis(glm::radians(-90.0f), glm::vec3(0.0, 0.0, 1.0)));
+
+        skyboxRight->SetPosition(glm::vec3(100, 100, -100));
+        skyboxRight->SetScale(glm::vec3(20, 20, 20));
+        skyboxRight->Rotate(glm::angleAxis(glm::radians(-90.0f), glm::vec3(0.0, 0.0, 1.0)));
+        
+
         game::SceneNode* map = CreateInstance("MapInstance1", "GameMapMesh", "TexturedMaterial", "GrassTexture");
+
     }
 
     void Game::MainLoop(void) {
@@ -364,7 +406,7 @@ namespace game {
             //printf("x = %.02f, y = %.02f\n", xpos, ypos);
 
             // Animate the scene
-            if (animating_) {
+            if (animating_ && !usingUI) {
                 static double last_time = 0;
                 double current_time = glfwGetTime();
                 if ((current_time - last_time) > 0.01) {
@@ -398,6 +440,9 @@ namespace game {
 
                     //!/ Grab the map instance
                     SceneNode* node = scene_.GetNode("MapInstance1");
+                    //SceneNode* node = scene_.GetNode("CratePlaneInstance1");
+                    //glm::quat rotation = glm::angleAxis(glm::pi<float>() / 180.0f, glm::vec3(0.0, 1.0, 0.0));
+                    //node->Rotate(rotation);
 
                     last_time = current_time;
                 }
@@ -409,6 +454,13 @@ namespace game {
 
             // Draw the scene
             scene_.Draw(&camera_);
+
+           
+
+            //Running these line of code will active the death screen effect
+            //You'll probably need to disable to the draw above as well (if statement or something)
+            //scene_.DrawToTexture(&camera_);
+            //scene_.DisplayTexture(resman_.GetResource("ScreenSpaceMaterial")->GetResource());
 
             
             if (usingUI) {
