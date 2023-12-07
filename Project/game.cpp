@@ -354,23 +354,25 @@ namespace game {
         game::SceneNode* skyboxLeft = CreateInstance("SkyboxInstance4", "GameMapMesh", "TexturedMaterial", "Skybox");
         game::SceneNode* skyboxRight = CreateInstance("SkyboxInstance5", "GameMapMesh", "TexturedMaterial", "Skybox");
 
+        int skyboxScale = 10;
+
         skyboxTop->SetPosition(glm::vec3(-100, 7, -100));
-        skyboxTop->SetScale(glm::vec3(20, 20, 20));
+        skyboxTop->SetScale(glm::vec3(skyboxScale, skyboxScale, skyboxScale));
 
         skyboxFront->SetPosition(glm::vec3(-100, 100, -100));
-        skyboxFront->SetScale(glm::vec3(20, 20, 20));
+        skyboxFront->SetScale(glm::vec3(skyboxScale, skyboxScale, skyboxScale));
         skyboxFront->Rotate(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0)));
 
         skyboxBack->SetPosition(glm::vec3(-100, 100, 100));
-        skyboxBack->SetScale(glm::vec3(20, 20, 20));
+        skyboxBack->SetScale(glm::vec3(skyboxScale, skyboxScale, skyboxScale));
         skyboxBack->Rotate(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0)));
        
         skyboxLeft->SetPosition(glm::vec3(-100, 100, -100));
-        skyboxLeft->SetScale(glm::vec3(20, 20, 20));
+        skyboxLeft->SetScale(glm::vec3(skyboxScale, skyboxScale, skyboxScale));
         skyboxLeft->Rotate(glm::angleAxis(glm::radians(-90.0f), glm::vec3(0.0, 0.0, 1.0)));
 
         skyboxRight->SetPosition(glm::vec3(100, 100, -100));
-        skyboxRight->SetScale(glm::vec3(20, 20, 20));
+        skyboxRight->SetScale(glm::vec3(skyboxScale, skyboxScale, skyboxScale));
         skyboxRight->Rotate(glm::angleAxis(glm::radians(-90.0f), glm::vec3(0.0, 0.0, 1.0)));
         
 
