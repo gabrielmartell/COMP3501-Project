@@ -286,6 +286,10 @@ namespace game {
         resman_.LoadResource(Texture, "MushroomTexture", filename.c_str());
         printf("|");
 
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/skybox.jpg");
+        resman_.LoadResource(Texture, "Skybox", filename.c_str());
+        printf("|");
+
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/rust.png");
         resman_.LoadResource(Texture, "NailTexture", filename.c_str());
 
