@@ -37,9 +37,10 @@ namespace game {
             void CreateSphere(std::string object_name, float radius = 0.6, int num_samples_theta = 90, int num_samples_phi = 45);
             void CreateWall(std::string object_name);
             void CreatePlane(std::string object_name);
-            void CreatePlaneWithCraters(std::string object_name, GLfloat* heightMap, float gridWidth, float gridHeight, int v_gridWidth, int v_gridLength);
-            //Loads the skybox
-            void LoadCubeMap(const std::string name, const std::vector<std::string>& faces);
+            
+            //!/ Create the geometry for the map
+            void CreateMapPlane(std::string object_name, GLfloat* heightMap, float gridWidth, float gridHeight, int v_gridWidth, int v_gridLength);
+            void CreateBugParticles(std::string object_name, int num_particles = 500);
 
         private:
             // List storing all resources
@@ -54,8 +55,6 @@ namespace game {
             void LoadTexture(const std::string name, const char *filename);
             // Loads a mesh in obj format
             void LoadMesh(const std::string name, const char *filename);
-
-            
 
     }; // class ResourceManager
 
