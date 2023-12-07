@@ -184,6 +184,11 @@ namespace game {
         resman_.LoadResource(Material, "NormalMapMaterial", filename.c_str());
         printf("|");
 
+        // Load material for screen-space effect
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("/screen_space");
+        resman_.LoadResource(Material, "ScreenSpaceMaterial", filename.c_str());
+        printf("|");
+
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("/textured_material");
         resman_.LoadResource(Material, "TexturedMaterial", filename.c_str());
@@ -302,6 +307,9 @@ namespace game {
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/pink.png");
         resman_.LoadResource(Texture, "HungryTongueText", filename.c_str());
         printf("|]\n");
+
+        // Setup drawing to texture
+        scene_.SetupDrawToTexture();
     }
 
 
@@ -321,11 +329,11 @@ namespace game {
         // Create an instance of the map
         game::SceneNode* map = CreateInstance("MapInstance1", "GameMapMesh", "TexturedMaterial", "TreeLeaves");
         
-        /*
-           ====================================================
-           Skybox Creation
-           ====================================================
-           */
+      /*
+        ====================================================
+        Skybox Creation
+        ====================================================
+      */
         game::SceneNode* skyboxTop = CreateInstance("SkyboxInstance1", "GameMapMesh", "TexturedMaterial", "Skybox");
         game::SceneNode* skyboxFront = CreateInstance("SkyboxInstance2", "GameMapMesh", "TexturedMaterial", "Skybox");
         game::SceneNode* skyboxBack = CreateInstance("SkyboxInstance3", "GameMapMesh", "TexturedMaterial", "Skybox");
@@ -427,7 +435,6 @@ namespace game {
 
                     // Animate the wall
                     SceneNode* node = scene_.GetNode("MapInstance1");
-                    //SceneNode* node2 = scene_.GetNode("SkyboxInstance");
                     //SceneNode* node = scene_.GetNode("CratePlaneInstance1");
                     //glm::quat rotation = glm::angleAxis(glm::pi<float>() / 180.0f, glm::vec3(0.0, 1.0, 0.0));
                     //node->Rotate(rotation);
@@ -441,6 +448,13 @@ namespace game {
 
             // Draw the scene
             scene_.Draw(&camera_);
+
+           
+
+            //Running these line of code will active the death screen effect
+            //You'll probably need to disable to the draw above as well (if statement or something)
+            //scene_.DrawToTexture(&camera_);
+            //scene_.DisplayTexture(resman_.GetResource("ScreenSpaceMaterial")->GetResource());
 
             
             if (usingUI) {
