@@ -58,8 +58,7 @@ namespace game {
     glm::vec3 lastPosition;
     bool inCabin = false;
 
-    //Need these for a skybox
-    GLuint skyboxVAO, skyboxVBO, skyboxTextureID;
+    
 
     // Materials 
     const std::string material_directory_g = MATERIAL_DIRECTORY;
@@ -276,7 +275,7 @@ namespace game {
         resman_.LoadResource(Texture, "NormalMap", filename.c_str());
         printf("|");
 
-        filename = std::string(MATERIAL_DIRECTORY) + std::string("/skybox.jpg");
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/skybox.jpg");
         resman_.LoadResource(Texture, "Skybox", filename.c_str());
         printf("|");
 
