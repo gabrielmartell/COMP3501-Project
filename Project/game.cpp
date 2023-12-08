@@ -48,6 +48,10 @@ namespace game {
     bool isDead = false;
     bool game_is_over = false;
 
+    //!/ Random Variables
+    std::mt19937 rng;
+    std::uniform_real_distribution<float> dist(0.0f, 360.0f);
+
     //!/ Global map width and height variables
     int v_gWidthReal = 50.0;
     int v_gLengthReal = 50.0;
@@ -564,13 +568,34 @@ namespace game {
     void Game::EnemyMovement(float dt) {
         SceneNode* head = scene_.GetNode("HungryHead");
         SceneNode* torso = scene_.GetNode("HungryTorso");
-        
+
+        //Time Variables
+        double current_time = glfwGetTime();
+        double changeDirectionInterval = 5.0f; // Time in seconds to change direction
+        static double directionChangeTimer = current_time; // Timer for direction change
+        // Initial patrol direction
+        static glm::vec3 patrolDirection = glm::vec3(cos(glm::radians(dist(rng))), 0.0f, sin(glm::radians(dist(rng))));
+
         //!/ PATROL state
         if (head->GetState() == 1 || inCabin) {
             float spottingRadius = 5.0f;
 
             glm::vec3 hungryPosition = head->GetPosition();
-            glm::vec3 direction = glm::vec3(25.0, 0.0, 30.0) - head->GetPosition();
+
+            
+            if (current_time - directionChangeTimer >= changeDirectionInterval) {
+                //New angle should generally be +90 from last
+                float newAngle = glm::radians(dist(rng)) + glm::radians(90.0f);
+                patrolDirection = glm::vec3(cos(newAngle), 0.0f, sin(newAngle));
+                directionChangeTimer = current_time;
+            }
+
+            //!/ Calculate the yaw angle for the current patrol direction
+            float yaw = std::atan2(patrolDirection.z, patrolDirection.x);
+
+            //!/ Set the head and torso orientation
+            head->SetOrientation(glm::angleAxis(yaw - glm::radians(90.0f), glm::vec3(0, -1, 0)));
+            torso->SetOrientation(glm::angleAxis(yaw - glm::radians(90.0f), glm::vec3(0, -1, 0)));
 
             //!/ Calculation and Offset for Hungry
             float newY = 3 * cos((M_PI / fabs(50 * 2 / 3)) * hungryPosition.x);
@@ -586,12 +611,14 @@ namespace game {
             head->SetPosition(hungryPosition);
             torso->SetPosition(hungryPosition);
 
-            direction.y = 0.0f;
-            direction.x *= (0.2f * dt);
-            direction.z *= (0.2f * dt);
+            patrolDirection.y = 0.0f; //Ensure no Y movement
+            glm::vec3 movement = patrolDirection * (0.2f * dt); 
 
-            head->Translate(direction);
-            torso->Translate(direction);
+            head->Translate(movement);
+            torso->Translate(movement);
+
+
+            
 
             if ((glm::distance(camera_.GetPosition(), hungryPosition) < spottingRadius && isHidden == false) && !inCabin) {
                 head->SetEnemyState(2);
