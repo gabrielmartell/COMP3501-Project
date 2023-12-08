@@ -193,6 +193,10 @@ namespace game {
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("/bug_particle");
         resman_.LoadResource(Material, "SwarmMaterial", filename.c_str());
+        printf("|");
+
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("/objective_particle");
+        resman_.LoadResource(Material, "ObjectiveMaterial", filename.c_str());
         printf("|]\n");
 
         /*
@@ -335,6 +339,7 @@ namespace game {
 
         // Create geometry of the "wall"
         resman_.CreateBugParticles("BeeParticles", 10);
+        resman_.CreateSphereParticles("SphereParticles");
         printf("|]\n");
 
 
@@ -783,6 +788,25 @@ namespace game {
                 }
             }
 
+            // Collision for Objective Marker
+            if ((currentObj->GetName()).find("ObjectiveMarker") != std::string::npos) {
+                glm::vec3 objPosition = currentObj->GetPosition();
+                objPosition.y = heightMap[(int)(playerPosition.z + (playerPosition.x * 50))] + 1;
+                float objRadius = 1.0f;
+
+                if (glm::distance(playerPosition, objPosition) < objRadius) {
+
+                    if (gameScore.x == 1 && gameScore.y == 1 && gameScore.z == 1) {
+                        gameScore.x--;
+                        gameScore.y--;
+                        gameScore.z--;
+                        gameScore.w++;
+                        std::cout << "CANDY" << std::endl;
+                        CreateCollectibles(1, 1, 1, glm::vec3(10.0, 3.0, 25.0));
+                    }
+                }
+            }
+
             //!/ Enemy Collision
             // Collision for Hungry Man
             if ((currentObj->GetName()).find("HungryTorso") != std::string::npos) {
@@ -1027,7 +1051,9 @@ namespace game {
         game::SceneNode* wallWindow = CreateInstance("WallWindow", "WallWindow", "TexturedMaterial");
         game::SceneNode* wallFull = CreateInstance("WallFull", "WallFull", "TexturedMaterial");
         game::SceneNode* floor = CreateInstance("Floor", "WallFull", "TexturedMaterial");
-
+        
+        game::SceneNode* objectiveMarker = CreateInstance("ObjectiveMarker", "SphereParticles", "ObjectiveMaterial", "HungryEyesText");
+        objectiveMarker->SetPosition(glm::vec3(location_x, location_y, location_z + 3.3f));
 
         wallEntrance->SetPosition(glm::vec3(location_x, location_y, location_z));
         wallEntrance->SetScale(glm::vec3(0.5, 0.5, 0.5));
