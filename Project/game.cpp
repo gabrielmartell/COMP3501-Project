@@ -45,6 +45,7 @@ namespace game {
 
     //!/ This will control whether UI from IMGUI is on
     bool usingUI = true;
+    bool isDead = false;
     bool game_is_over = false;
 
     //!/ Global map width and height variables
@@ -411,6 +412,7 @@ namespace game {
         float previousVer = 0.0f;
         float horizontalAngle = 0.0f;
         float verticalAngle = 0.0f;
+        
 
         float mouseSpeed = 0.01f;
 
@@ -432,7 +434,7 @@ namespace game {
             //printf("x = %.02f, y = %.02f\n", xpos, ypos);
 
             // Animate the scene
-            if (animating_ && !usingUI) {
+            if (animating_ && !usingUI && !isDead && !game_is_over) {
                 static double last_time = 0;
                 double current_time = glfwGetTime();
                 if ((current_time - last_time) > 0.01) {
@@ -476,15 +478,31 @@ namespace game {
          
             CollisionDetection();
 
-            // Draw the scene
-            scene_.Draw(&camera_);
+            if (isDead) {
+                static double deathTime = current_time;
+                //deathTime += (current_time - last_time);
+                if (current_time - deathTime >= 3.0) { 
+                    game_is_over = true;
+                    usingUI = true;
+                    //printf("We died :(");
+                }
+            }
+
+            if (!isDead) {
+                // Draw the scene
+                scene_.Draw(&camera_);
+            }
+            else {
+                //Running these line of code will active the death screen effect
+            
+                scene_.DrawToTexture(&camera_);
+                scene_.DisplayTexture(resman_.GetResource("ScreenSpaceMaterial")->GetResource());
+            }
+            
 
            
 
-            //Running these line of code will active the death screen effect
-            //You'll probably need to disable to the draw above as well (if statement or something)
-            //scene_.DrawToTexture(&camera_);
-            //scene_.DisplayTexture(resman_.GetResource("ScreenSpaceMaterial")->GetResource());
+            
 
             
             if (usingUI) {
@@ -504,7 +522,11 @@ namespace game {
                     ImGui::EndFrame();
                     ImGui::NewFrame();
                     ImGui::Text("Game Over!");
-                    //Handle anything else in here later
+                    //SCORE GOES HERE NICK
+                    int tmpScore = 100;
+                    std::string scoreText = "Your score was " + std::to_string(tmpScore);
+                    
+                    ImGui::Text(scoreText.c_str());
                 }
 
                 //You can just call Text again to add more text to the GUI
@@ -531,9 +553,11 @@ namespace game {
             // Update other events like input handling
             glfwPollEvents();
 
-            horizontalAngle = 0.0f;
-            verticalAngle = 0.0f;
-
+            if (!isDead) {
+                horizontalAngle = 0.0f;
+                verticalAngle = 0.0f;
+            }
+            
         }
     }
 
@@ -815,7 +839,8 @@ namespace game {
                 float objRadius = 0.8f;
 
                 if (glm::distance(playerPosition, objPosition) < objRadius) {
-                    std::cout << "I got you!" << std::endl;
+                    //std::cout << "I got you!" << std::endl;
+                    isDead = true;
                 }
             }
 
@@ -856,7 +881,7 @@ namespace game {
         }
 
         //!/ WASD movment
-        if (key == GLFW_KEY_W) {
+        if (key == GLFW_KEY_W && !isDead) {
 
             //Last position snippet
             lastPosition = game->camera_.GetPosition();
@@ -875,7 +900,7 @@ namespace game {
             }
             
         }
-        if (key == GLFW_KEY_S) {
+        if (key == GLFW_KEY_S && !isDead) {
             //Last position snippet
             lastPosition = game->camera_.GetPosition();
 
@@ -893,7 +918,7 @@ namespace game {
             }
             
         }
-        if (key == GLFW_KEY_A) {
+        if (key == GLFW_KEY_A && !isDead) {
             //Last position snippet
             lastPosition = game->camera_.GetPosition();
 
@@ -911,7 +936,7 @@ namespace game {
             }
         }
 
-        if (key == GLFW_KEY_D) {
+        if (key == GLFW_KEY_D && !isDead) {
             //Last position snippet
             lastPosition = game->camera_.GetPosition();
 
