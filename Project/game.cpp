@@ -48,6 +48,8 @@ namespace game {
     bool isDead = false;
     bool game_is_over = false;
 
+    float hungry_speed = 0.2;
+
     //!/ Random Variables
     std::mt19937 rng;
     std::uniform_real_distribution<float> dist(0.0f, 360.0f);
@@ -132,24 +134,6 @@ namespace game {
         // Set up z-buffer
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
-        /*
-        // Select particle blending or not
-        if (blending_) {
-            // Disable depth write
-            glDepthMask(GL_FALSE);
-
-            // Enable blending
-            glEnable(GL_BLEND);
-            //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // Simpler form
-            glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            glBlendEquationSeparate(GL_FUNC_ADD, GL_MAX);
-        }
-        else {
-            // Enable z-buffer
-            glDepthMask(GL_TRUE);
-            glDepthFunc(GL_LESS);
-        }
-        */
 
         // Set viewport
         int width, height;
@@ -298,7 +282,7 @@ namespace game {
         resman_.LoadResource(Texture, "MushroomTexture", filename.c_str());
         printf("|");
 
-        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/skybox.jpg");
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/skybox.png");
         resman_.LoadResource(Texture, "Skybox", filename.c_str());
         printf("|");
 
@@ -327,6 +311,14 @@ namespace game {
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/pink.png");
         resman_.LoadResource(Texture, "HungryTongueText", filename.c_str());
+        printf("|");
+
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/yum.png");
+        resman_.LoadResource(Texture, "Yum", filename.c_str());
+        printf("|");
+
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/hungryman.png");
+        resman_.LoadResource(Texture, "HungryManPic", filename.c_str());
 
         printf("|]\n");
 
@@ -478,10 +470,6 @@ namespace game {
                 }
             }
 
-            //printf("x = %f, z = %f\n", camera_.GetPosition().x, camera_.GetPosition().z);
-         
-            CollisionDetection();
-
             if (isDead) {
                 static double deathTime = current_time;
                 //deathTime += (current_time - last_time);
@@ -503,12 +491,6 @@ namespace game {
                 scene_.DisplayTexture(resman_.GetResource("ScreenSpaceMaterial")->GetResource());
             }
             
-
-           
-
-            
-
-            
             if (usingUI) {
                 //Start UI
                 //Start a new ImGui frame
@@ -521,14 +503,17 @@ namespace game {
                 std::string PressText = "Press Tab to START";
                 ImGui::Text(StartupText.c_str());
                 ImGui::Text(PressText.c_str());
+                GLuint texture_id = resman_.GetResource("Yum")->GetResource();
+                ImGui::Image((void*)(intptr_t)texture_id, ImVec2(300, 300));
 
                 if (game_is_over) {
                     ImGui::EndFrame();
                     ImGui::NewFrame();
                     ImGui::Text("Game Over!");
-                    //SCORE GOES HERE NICK
-                    int tmpScore = 100;
-                    std::string scoreText = "Your score was " + std::to_string(tmpScore);
+                    GLuint texture_id = resman_.GetResource("HungryManPic")->GetResource();
+                    ImGui::Image((void*)(intptr_t)texture_id, ImVec2(300, 300));
+
+                    std::string scoreText = "Your score was " + std::to_string((int) gameScore.w);
                     
                     ImGui::Text(scoreText.c_str());
                 }
@@ -568,6 +553,7 @@ namespace game {
     void Game::EnemyMovement(float dt) {
         SceneNode* head = scene_.GetNode("HungryHead");
         SceneNode* torso = scene_.GetNode("HungryTorso");
+        SceneNode* eyes = scene_.GetNode("HungryEyes");
 
         //Time Variables
         double current_time = glfwGetTime();
@@ -612,7 +598,7 @@ namespace game {
             torso->SetPosition(hungryPosition);
 
             patrolDirection.y = 0.0f; //Ensure no Y movement
-            glm::vec3 movement = patrolDirection * (0.2f * dt); 
+            glm::vec3 movement = patrolDirection * (hungry_speed * dt); 
 
             head->Translate(movement);
             torso->Translate(movement);
@@ -621,13 +607,15 @@ namespace game {
             
 
             if ((glm::distance(camera_.GetPosition(), hungryPosition) < spottingRadius && isHidden == false) && !inCabin) {
-                head->SetEnemyState(2);
+                head->SetEnemyState(2);            
             }
         }
 
         //!/ CHASE state
         else if (head->GetState() == 2) {
             
+
+
             //!/ Radius and direction variables
             float chaseRadius = 5.0f;
             glm::vec3 direction = camera_.GetPosition() - head->GetPosition();
@@ -643,7 +631,6 @@ namespace game {
             //!/ Set the head and torso orientation
             head->SetOrientation(glm::angleAxis(yaw - glm::radians(90.0f), glm::vec3(0, -1, 0)));
             torso->SetOrientation(glm::angleAxis(yaw - glm::radians(90.0f), glm::vec3(0, -1, 0)));
-
 
             //!/ Grab the position
             glm::vec3 hungryPosition = head->GetPosition();
@@ -666,8 +653,8 @@ namespace game {
                 torso->SetPosition(hungryPosition);
 
                 direction.y = 0.0f;
-                direction.x *= (0.2f * dt);
-                direction.z *= (0.2f * dt);
+                direction.x *= (hungry_speed * dt);
+                direction.z *= (hungry_speed * dt);
 
                 head->Translate(direction);
                 torso->Translate(direction);
@@ -689,6 +676,12 @@ namespace game {
         //!/ Determine current player position
         glm::vec3 playerPosition = camera_.GetPosition();
         
+        if (playerPosition.x > 49.0f || playerPosition.x < 1.0f || playerPosition.z > 49.0f || playerPosition.z < 1.0f) {
+            camera_.SetPosition(lastPosition);
+        }
+
+
+
         //!/ Grabbing wall properties and cabin positions 
         SceneNode* cabinDoor = scene_.GetNode("CabinEntrance");
         glm::vec3 wallStart = cabinDoor->GetPosition();
@@ -848,11 +841,11 @@ namespace game {
                 if (glm::distance(playerPosition, objPosition) < objRadius) {
 
                     if (gameScore.x == 1 && gameScore.y == 1 && gameScore.z == 1) {
-                        gameScore.x--;
-                        gameScore.y--;
-                        gameScore.z--;
+                        gameScore.x--; gameScore.y--; gameScore.z--;
                         gameScore.w++;
-                        std::cout << "CANDY" << std::endl;
+
+                        hungry_speed += 0.2f;
+                        std::cout << "CANDY (" << (int)gameScore.w << ")" << std::endl;
                         CreateCollectibles(1, 1, 1, glm::vec3(10.0, 3.0, 25.0));
                     }
                 }
@@ -862,9 +855,10 @@ namespace game {
             // Collision for Hungry Man
             if ((currentObj->GetName()).find("HungryTorso") != std::string::npos) {
                 glm::vec3 objPosition = currentObj->GetPosition();
-                objPosition.y = heightMap[(int)(playerPosition.z + (playerPosition.x * 50))];
-                float objRadius = 0.8f;
+                objPosition.y = heightMap[(int)(playerPosition.z + (playerPosition.x * 50))] - 1;
+                float objRadius = 2.0f;
 
+                //printf("%f\n", glm::distance(playerPosition, objPosition));
                 if (glm::distance(playerPosition, objPosition) < objRadius) {
                     //std::cout << "I got you!" << std::endl;
                     isDead = true;
@@ -909,7 +903,6 @@ namespace game {
 
         //!/ WASD movment
         if (key == GLFW_KEY_W && !isDead) {
-
             //Last position snippet
             lastPosition = game->camera_.GetPosition();
 

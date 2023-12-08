@@ -1,1 +1,1 @@
-#define MATERIAL_DIRECTORY "C:\\Users\\itsmy\\Desktop\\3501\\COMP3501-Project-particle_fix\\Project"
+#define MATERIAL_DIRECTORY "C:\\Users\\H4kmo\\source\\repos\\gabrielmartell\\Project_old5\\Project"
