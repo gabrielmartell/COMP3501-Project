@@ -1,1 +1,1 @@
-#define MATERIAL_DIRECTORY "C:\\Users\\H4kmo\\source\\repos\\gabrielmartell\\Project_old5\\Project"
+#define MATERIAL_DIRECTORY "C:\\Users\\H4kmo\\source\\repos\\gabrielmartell\\Project_old6\\Project"

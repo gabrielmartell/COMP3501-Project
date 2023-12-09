@@ -17,13 +17,13 @@ namespace game {
     // Some configuration constants
     // They are written here as global variables, but ideally they should be loaded from a configuration file
 
-    // Main window settings
+    // MAIN WINDOW SETTING
     const std::string window_title_g = "Hungry Man";
     const unsigned int window_width_g = 800;
     const unsigned int window_height_g = 600;
     const bool window_full_screen_g = false;
 
-    // Viewport and camera settings
+    // VIEWPORT AND CAMERA SETTINGS
     float camera_near_clip_distance_g = 0.01;
     float camera_far_clip_distance_g = 1000.0;
     float camera_fov_g = 90.0; // Field-of-view of camera
@@ -32,43 +32,48 @@ namespace game {
     glm::vec3 camera_look_at_g(9.0, 1.0, 0.5);
     glm::vec3 camera_up_g(0.0, 1.0, 0.0);
 
-    //!/ Switching to Arrow Key Movement
+    //!/ ARROW KEY MOVEMENT
     bool upPressed = false;
     bool downPressed = false;
     bool leftPressed = false;
     bool rightPressed = false;
     bool usingMouseCamera = true;
     
-    //!/ Crouching Boolean
+    //!/ CROUCHING VARs
     bool isCrouching = false;
     bool isHidden = false;
+    bool inBush = false;
 
-    //!/ This will control whether UI from IMGUI is on
+    //!/ IMGUI VARs
     bool usingUI = true;
     bool isDead = false;
     bool game_is_over = false;
     bool start_screen_on = true;
 
+    //!/ HUNGRY-MAN VARs
     float hungry_speed = 0.2;
+    glm::vec3 HungryLastPosition;
 
-    //!/ Random Variables
+    //!/ RANDOM VARs
     std::mt19937 rng;
     std::uniform_real_distribution<float> dist(0.0f, 360.0f);
 
-    //!/ Global map width and height variables
+    //!/ GLOBAL MAP WIDTH AND LENGTH
     int v_gWidthReal = 50.0;
     int v_gLengthReal = 50.0;
 
-    //!/ Collision detection
+    //!/ PLAYER COLLISION
     // We need a way to move the player back to their last position
     glm::vec3 lastPosition;
     bool inCabin = false;
 
-    // Materials 
+    // ITEM CREATION (ENSURE WHEN NEW COLLECTIBLES ARE PLACED, THEIR NAMES ARE PAIRWISE DISTINCT
+    int indexingOffset = 0;
+
+    // MATERIAL DIRECTORY 
     const std::string material_directory_g = MATERIAL_DIRECTORY;
 
     Game::Game(void) {
-
         // Don't do work in the constructor, leave it for the Init() function
     }
 
@@ -170,24 +175,24 @@ namespace game {
         printf("    MATERIALS [");
         std::string filename = std::string(MATERIAL_DIRECTORY) + std::string("/normal_map");
         resman_.LoadResource(Material, "NormalMapMaterial", filename.c_str());
-        printf("|");
+        printf("=");
 
         // Load material for screen-space effect
         filename = std::string(MATERIAL_DIRECTORY) + std::string("/screen_space");
         resman_.LoadResource(Material, "ScreenSpaceMaterial", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("/textured_material");
         resman_.LoadResource(Material, "TexturedMaterial", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("/bug_particle");
         resman_.LoadResource(Material, "SwarmMaterial", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("/objective_particle");
         resman_.LoadResource(Material, "ObjectiveMaterial", filename.c_str());
-        printf("|]\n");
+        printf("=]\n");
 
         /*
         ======================
@@ -198,76 +203,76 @@ namespace game {
         printf("    MESHES [");
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/mushroom.obj");
         resman_.LoadResource(Mesh, "Mushroom", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/nail.obj");
         resman_.LoadResource(Mesh, "Nail", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/treebottom.obj");
         resman_.LoadResource(Mesh, "TreeTrunk", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/treetop.obj");
         resman_.LoadResource(Mesh, "TreeTop", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/bush.obj");
         resman_.LoadResource(Mesh, "Bush", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/wall_door.obj");
         resman_.LoadResource(Mesh, "WallDoor", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/wall_full.obj");
         resman_.LoadResource(Mesh, "WallFull", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/wall_roof.obj");
         resman_.LoadResource(Mesh, "WallRoof", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/wall_window.obj");
         resman_.LoadResource(Mesh, "WallWindow", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/roof_main.obj");
         resman_.LoadResource(Mesh, "RoofMain", filename.c_str());
-        printf("|");
+        printf("=");
 
         // HUNGRY-MAN PARTS
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/hungryhead.obj");
         resman_.LoadResource(Mesh, "HungryHead", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/hungryeyes.obj");
         resman_.LoadResource(Mesh, "HungryEyes", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/hungrytongue.obj");
         resman_.LoadResource(Mesh, "HungryTongue", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/hungrytorso.obj");
         resman_.LoadResource(Mesh, "HungryTorso", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/hungryrightarm.obj");
         resman_.LoadResource(Mesh, "HungryRArm", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/hungryleftarm.obj");
         resman_.LoadResource(Mesh, "HungryLArm", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/hungryrightleg.obj");
         resman_.LoadResource(Mesh, "HungryRLeg", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/hungryleftleg.obj");
         resman_.LoadResource(Mesh, "HungryLLeg", filename.c_str());
-        printf("|]\n");
+        printf("=]\n");
 
         /*
         ======================
@@ -277,63 +282,63 @@ namespace game {
         printf("    TEXTURES [");
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/normal_map2.png");
         resman_.LoadResource(Texture, "NormalMap", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/mushroom_text.png");
         resman_.LoadResource(Texture, "MushroomTexture", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/skybox.png");
         resman_.LoadResource(Texture, "Skybox", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/rust.png");
         resman_.LoadResource(Texture, "NailTexture", filename.c_str());
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/bark.png");
         resman_.LoadResource(Texture, "TreeBark", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/grass.png");
         resman_.LoadResource(Texture, "GrassTexture", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/bee.png");
         resman_.LoadResource(Texture, "BeeHUD", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/nail.png");
         resman_.LoadResource(Texture, "NailHUD", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/mushroom.png");
         resman_.LoadResource(Texture, "MushroomHUD", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/leaves.png");
         resman_.LoadResource(Texture, "TreeLeaves", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/orange.png");
         resman_.LoadResource(Texture, "HungrySkin", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/hungryeyes.png");
         resman_.LoadResource(Texture, "HungryEyesText", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/pink.png");
         resman_.LoadResource(Texture, "HungryTongueText", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/yum.png");
         resman_.LoadResource(Texture, "Yum", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/hungryman.png");
         resman_.LoadResource(Texture, "HungryManPic", filename.c_str());
 
-        printf("|]\n");
+        printf("=]\n");
 
 
         //!/ Create the heightMap
@@ -345,12 +350,12 @@ namespace game {
         //!/ Create geometry of the "Plane"
         //! This function uses these parameters, Object Name, Height Map, Grid Width, Grid Length, Number of Quads
         resman_.CreateMapPlane("GameMapMesh", heightMap, 50, 50, 50, 50);
-        printf("|");
+        printf("=");
 
         // Create geometry of the "wall"
         resman_.CreateBugParticles("BeeParticles", 10);
         resman_.CreateSphereParticles("SphereParticles");
-        printf("|]\n");
+        printf("=]\n");
 
 
         // Setup drawing to texture
@@ -371,6 +376,7 @@ namespace game {
 
         CreateProps(50, 30, cabin_location);
 
+        indexingOffset = 0;
         CreateCollectibles(3, 3, 3, cabin_location);
 
         CreateHungry(hungry_location);
@@ -556,15 +562,8 @@ namespace game {
                         ImGui::Image((void*)(intptr_t)texture_id, ImVec2(img_dim, img_dim));
                         ImGui::End(); // Close the ImageWindow
                     }
-
-                    
-
-
-                    
-                    
                 }
                 
-
                 if (game_is_over) {
                     // Display game over text and image
                     ImGui::Text("Game Over!");
@@ -579,7 +578,6 @@ namespace game {
 
                 //You can just call Text again to add more text to the GUI
                 //ImGui::Text(text.c_str());
-
 
                 //Render the ImGui frame
                 ImGui::Render();
@@ -623,8 +621,12 @@ namespace game {
 
         //!/ PATROL state
         if (head->GetState() == 1 || inCabin) {
-            float spottingRadius = 5.0f;
+            float spottingRadius = 9.0; 
+            
+            if (isCrouching) { spottingRadius = 5.0f; }
+            else { spottingRadius = 9.0f; }
 
+            HungryLastPosition = head->GetPosition();
             glm::vec3 hungryPosition = head->GetPosition();
 
             
@@ -661,10 +663,11 @@ namespace game {
 
             head->Translate(movement);
             torso->Translate(movement);
+            hungryPosition = head->GetPosition();
 
-
-            
-
+            if (hungryPosition.x > 49.0f || hungryPosition.x < 1.0f || hungryPosition.z > 49.0f || hungryPosition.z < 1.0f) {
+                camera_.SetPosition(HungryLastPosition);
+            }
             if ((glm::distance(camera_.GetPosition(), hungryPosition) < spottingRadius && isHidden == false) && !inCabin) {
                 head->SetEnemyState(2);            
             }
@@ -672,9 +675,6 @@ namespace game {
 
         //!/ CHASE state
         else if (head->GetState() == 2) {
-            
-
-
             //!/ Radius and direction variables
             float chaseRadius = 5.0f;
             glm::vec3 direction = camera_.GetPosition() - head->GetPosition();
@@ -734,12 +734,15 @@ namespace game {
 
         //!/ Determine current player position
         glm::vec3 playerPosition = camera_.GetPosition();
+
+        //!/ Determine current hungryman position
+        SceneNode* head = scene_.GetNode("HungryHead");
+        glm::vec3 hungryPosition = head->GetPosition();
+
         
         if (playerPosition.x > 49.0f || playerPosition.x < 1.0f || playerPosition.z > 49.0f || playerPosition.z < 1.0f) {
             camera_.SetPosition(lastPosition);
         }
-
-
 
         //!/ Grabbing wall properties and cabin positions 
         SceneNode* cabinDoor = scene_.GetNode("CabinEntrance");
@@ -789,6 +792,10 @@ namespace game {
 
                 float objRadius = 1.0f; //Needs to be changed per object
 
+                if ((hungryPosition.x > wallStart.x && hungryPosition.x < wallEnd.x) && (hungryPosition.z > wallStart.z && hungryPosition.z < wallEnd.z)) {
+                    head->SetPosition(HungryLastPosition);
+                }
+
                 if ( (playerPosition.x > wallStart.x && playerPosition.x < wallEnd.x) && (playerPosition.z > wallStart.z && playerPosition.z < wallEnd.z)) {
                     camera_.SetPosition(lastPosition); //Reset player position
                     break;
@@ -817,6 +824,10 @@ namespace game {
 
                 float objRadius = 1.0f; //Needs to be changed per object
 
+                if ((hungryPosition.x > wallStart.x && hungryPosition.x < wallEnd.x + 1.65) && (hungryPosition.z > wallStart.z && hungryPosition.z < wallEnd.z)) {
+                    head->SetPosition(HungryLastPosition);
+                }
+
                 if ( ( (playerPosition.x > wallStart.x && playerPosition.x < wallEnd.x) || (playerPosition.x > wallFrameStart.x && playerPosition.x < wallFrameEnd.x)) && (playerPosition.z > wallStart.z && playerPosition.z < wallEnd.z)) {
                     camera_.SetPosition(lastPosition); //Reset player position
                     break;
@@ -826,13 +837,14 @@ namespace game {
             //!/ Hiding mechanic
             // Collision for Bushes
             if ((currentObj->GetName()).find("Bush") != std::string::npos) {
-
+                
                 glm::vec3 objPosition = currentObj->GetPosition();
                 objPosition.y = heightMap[(int)(playerPosition.z + (playerPosition.x * 50))];
                 float objRadius = 1.0f; //Needs to be changed per object
 
                 if (glm::distance(playerPosition, objPosition) < objRadius) {
                     //!/ Check if the player is crouching
+                    inBush = true;
                     if (isCrouching) {
                         isHidden = true;
                     }
@@ -925,6 +937,9 @@ namespace game {
             }
 
         }
+
+        if (!inBush) { isHidden = false; }
+        inBush = false;
     }
 
     void Game::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -1267,8 +1282,9 @@ namespace game {
 
         //!/ MUSHROOM CREATION
         for (int i = 0; i < mushNum; ++i) {
+            int offset = i + indexingOffset;
             std::stringstream ss;
-            ss << i;
+            ss << offset;
             std::string index = ss.str();
             std::string name = "Mushroom" + index;
 
@@ -1300,6 +1316,7 @@ namespace game {
 
         //!/ BEE CREATION
         for (int i = 0; i < beeNum; ++i) {
+            int offset = i + indexingOffset;
             std::stringstream ss;
             ss << i;
             std::string index = ss.str();
@@ -1327,6 +1344,7 @@ namespace game {
 
         //!/ NAIL CREATION
         for (int i = 0; i < nailNum; ++i) {
+            int offset = i + indexingOffset;
             std::stringstream ss;
             ss << i;
             std::string index = ss.str();
@@ -1358,6 +1376,7 @@ namespace game {
                 }
             }
         }
+        indexingOffset += nailNum;
     }
 
     // CreateInstance function
