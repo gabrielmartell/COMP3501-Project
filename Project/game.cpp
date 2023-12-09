@@ -47,6 +47,7 @@ namespace game {
     bool usingUI = true;
     bool isDead = false;
     bool game_is_over = false;
+    bool start_screen_on = true;
 
     float hungry_speed = 0.2;
 
@@ -297,6 +298,18 @@ namespace game {
         resman_.LoadResource(Texture, "GrassTexture", filename.c_str());
         printf("|");
 
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/bee.png");
+        resman_.LoadResource(Texture, "BeeHUD", filename.c_str());
+        printf("|");
+
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/nail.png");
+        resman_.LoadResource(Texture, "NailHUD", filename.c_str());
+        printf("|");
+
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/mushroom.png");
+        resman_.LoadResource(Texture, "MushroomHUD", filename.c_str());
+        printf("|");
+
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/leaves.png");
         resman_.LoadResource(Texture, "TreeLeaves", filename.c_str());
         printf("|");
@@ -415,6 +428,7 @@ namespace game {
         double xpos, ypos;
        
         glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+        glClear(GL_COLOR_BUFFER_BIT);
        
         // Loop while the user did not close the window
         while (!glfwWindowShouldClose(window_)) {
@@ -430,7 +444,7 @@ namespace game {
             //printf("x = %.02f, y = %.02f\n", xpos, ypos);
 
             // Animate the scene
-            if (animating_ && !usingUI && !isDead && !game_is_over) {
+            if (animating_ && !isDead && !start_screen_on && !game_is_over) {
                 static double last_time = 0;
                 double current_time = glfwGetTime();
                 if ((current_time - last_time) > 0.01) {
@@ -492,30 +506,75 @@ namespace game {
             }
             
             if (usingUI) {
-                //Start UI
-                //Start a new ImGui frame
+
                 ImGui_ImplOpenGL3_NewFrame();
                 ImGui_ImplGlfw_NewFrame();
                 ImGui::NewFrame();
 
-                //Menu Text
-                std::string StartupText = "Welcome to HUNGRY MAN";
-                std::string PressText = "Press Tab to START";
-                ImGui::Text(StartupText.c_str());
-                ImGui::Text(PressText.c_str());
-                GLuint texture_id = resman_.GetResource("Yum")->GetResource();
-                ImGui::Image((void*)(intptr_t)texture_id, ImVec2(300, 300));
+
+                if (start_screen_on) {
+                    // Menu Text
+                    ImGui::SetNextWindowPos(ImVec2(200, 50));
+                    std::string StartupText = "Welcome to HUNGRY MAN";
+                    std::string PressText = "Press Tab to START";
+                    ImGui::Text(StartupText.c_str());
+                    ImGui::Text(PressText.c_str());
+
+                    // Display image
+                    GLuint texture_id = resman_.GetResource("Yum")->GetResource();
+                    ImGui::Image((void*)(intptr_t)texture_id, ImVec2(300, 300));
+                    
+                }
+
+                if (!start_screen_on) {
+                    // Image without background
+                    int img_dim = 100;
+
+                    if (gameScore.x >= 1 && !isDead) {
+                        ImGui::SetNextWindowPos(ImVec2(0, 0));
+                        ImGui::SetNextWindowSize(ImVec2(img_dim, img_dim));
+                        ImGui::Begin("ImageWindow3", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground);
+                        GLuint texture_id = resman_.GetResource("MushroomHUD")->GetResource();
+                        ImGui::Image((void*)(intptr_t)texture_id, ImVec2(img_dim, img_dim));
+                        ImGui::End(); // Close the ImageWindow
+                    }
+
+                    if (gameScore.y >= 1 && !isDead) {
+                        ImGui::SetNextWindowPos(ImVec2(125, 0));
+                        ImGui::SetNextWindowSize(ImVec2(img_dim, img_dim));
+                        ImGui::Begin("ImageWindow", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground);
+                        GLuint texture_id = resman_.GetResource("BeeHUD")->GetResource();
+                        ImGui::Image((void*)(intptr_t)texture_id, ImVec2(img_dim, img_dim));
+                        ImGui::End(); // Close the ImageWindow
+                    }
+
+                    if (gameScore.z >= 1 && !isDead) {
+                        ImGui::SetNextWindowPos(ImVec2(250, 0));
+                        ImGui::SetNextWindowSize(ImVec2(img_dim, img_dim));
+                        ImGui::Begin("ImageWindow2", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground);
+                        GLuint texture_id = resman_.GetResource("NailHUD")->GetResource();
+                        ImGui::Image((void*)(intptr_t)texture_id, ImVec2(img_dim, img_dim));
+                        ImGui::End(); // Close the ImageWindow
+                    }
+
+                    
+
+
+                    
+                    
+                }
+                
 
                 if (game_is_over) {
-                    ImGui::EndFrame();
-                    ImGui::NewFrame();
+                    // Display game over text and image
                     ImGui::Text("Game Over!");
                     GLuint texture_id = resman_.GetResource("HungryManPic")->GetResource();
                     ImGui::Image((void*)(intptr_t)texture_id, ImVec2(300, 300));
 
-                    std::string scoreText = "Your score was " + std::to_string((int) gameScore.w);
-                    
+                    // Display score
+                    std::string scoreText = "Your score was " + std::to_string((int)gameScore.w);
                     ImGui::Text(scoreText.c_str());
+                    ImGui::Text("Press Q to Quit");
                 }
 
                 //You can just call Text again to add more text to the GUI
@@ -528,7 +587,7 @@ namespace game {
                 glfwGetFramebufferSize(window_, &display_w, &display_h);
                 glViewport(0, 0, display_w, display_h);
                 glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-                glClear(GL_COLOR_BUFFER_BIT);
+                
                 ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
                 glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
                 
@@ -902,7 +961,7 @@ namespace game {
         }
 
         //!/ WASD movment
-        if (key == GLFW_KEY_W && !isDead) {
+        if (key == GLFW_KEY_W && !isDead && !start_screen_on) {
             //Last position snippet
             lastPosition = game->camera_.GetPosition();
 
@@ -920,7 +979,7 @@ namespace game {
             }
             
         }
-        if (key == GLFW_KEY_S && !isDead) {
+        if (key == GLFW_KEY_S && !isDead && !start_screen_on) {
             //Last position snippet
             lastPosition = game->camera_.GetPosition();
 
@@ -938,7 +997,7 @@ namespace game {
             }
             
         }
-        if (key == GLFW_KEY_A && !isDead) {
+        if (key == GLFW_KEY_A && !isDead && !start_screen_on) {
             //Last position snippet
             lastPosition = game->camera_.GetPosition();
 
@@ -956,7 +1015,7 @@ namespace game {
             }
         }
 
-        if (key == GLFW_KEY_D && !isDead) {
+        if (key == GLFW_KEY_D && !isDead && !start_screen_on) {
             //Last position snippet
             lastPosition = game->camera_.GetPosition();
 
@@ -1030,7 +1089,7 @@ namespace game {
 
         //!/ Tab will allow the game to start
         if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
-            usingUI = false;
+            start_screen_on = false;
         }
 
     }
