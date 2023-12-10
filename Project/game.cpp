@@ -186,6 +186,10 @@ namespace game {
         resman_.LoadResource(Material, "TexturedMaterial", filename.c_str());
         printf("=");
 
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("/lit");
+        resman_.LoadResource(Material, "Lit", filename.c_str());
+        printf("=");
+
         filename = std::string(MATERIAL_DIRECTORY) + std::string("/bug_particle");
         resman_.LoadResource(Material, "SwarmMaterial", filename.c_str());
         printf("=");
@@ -383,7 +387,7 @@ namespace game {
 
 
         // Create an instance of the map
-        //game::SceneNode* map = CreateInstance("MapInstance1", "GameMapMesh", "TexturedMaterial", "TreeLeaves");
+        //game::SceneNode* map = CreateInstance("MapInstance1", "GameMapMesh", "Lit", "TreeLeaves");
         
       /*
         ====================================================
@@ -418,7 +422,11 @@ namespace game {
         skyboxRight->Rotate(glm::angleAxis(glm::radians(-90.0f), glm::vec3(0.0, 0.0, 1.0)));
         
 
-        game::SceneNode* map = CreateInstance("MapInstance1", "GameMapMesh", "TexturedMaterial", "GrassTexture");
+        game::SceneNode* map = CreateInstance("MapInstance1", "GameMapMesh", "Lit", "GrassTexture");
+
+        
+        
+       
 
     }
 
@@ -484,7 +492,20 @@ namespace game {
 
                     //!/ Grab the map instance
                     SceneNode* node = scene_.GetNode("MapInstance1");
+                    GLuint program1 = node->GetMaterial();
 
+                    
+
+                    GLint CameraPosition1 = glGetUniformLocation(program1, "camera_pos");
+                    glUniform3f(CameraPosition1, camera_.GetPosition().x, camera_.GetPosition().y, camera_.GetPosition().z);
+
+                    GLint LightPosLoc = glGetUniformLocation(program1, "light_position");
+                    glUniform3f(LightPosLoc, camera_.GetPosition().x, camera_.GetPosition().y, camera_.GetPosition().z);
+
+                    GLint MaxDist = glGetUniformLocation(program1, "max_distance");
+                    glUniform1f(MaxDist, 15.0f);
+
+                    
 
                     last_time = current_time;
                 }
@@ -1126,16 +1147,22 @@ namespace game {
     //!/ This function creates the enemy
     //! It takes the location designated for the enemy
     void Game::CreateHungry(glm::vec3 location) {
+
+
         
         //!/ Make all limbs of hungry man
-        game::SceneNode* head = CreateInstance("HungryHead", "HungryHead", "TexturedMaterial", "HungrySkin"); head->Scale(glm::vec3(0.5, 0.5, 0.5));
-        game::SceneNode* eyes = CreateInstance("HungryEyes", "HungryEyes", "TexturedMaterial", "HungryEyesText", head); eyes->Scale(glm::vec3(0.5, 0.5, 0.5));
-        game::SceneNode* tongue = CreateInstance("HungryTongue", "HungryTongue", "TexturedMaterial", "HungryTongueText", head); tongue->Scale(glm::vec3(0.5, 0.5, 0.5));
-        game::SceneNode* torso = CreateInstance("HungryTorso", "HungryTorso", "TexturedMaterial", "HungrySkin"); torso->Scale(glm::vec3(0.5, 0.5, 0.5));
-        game::SceneNode* lArm = CreateInstance("HungryLArm", "HungryLArm", "TexturedMaterial", "HungrySkin", torso); lArm->Scale(glm::vec3(0.5, 0.5, 0.5));
-        game::SceneNode* rArm = CreateInstance("HungryRArm", "HungryRArm", "TexturedMaterial", "HungrySkin", torso); rArm->Scale(glm::vec3(0.5, 0.5, 0.5));
-        game::SceneNode* lLeg = CreateInstance("HungrylLeg", "HungryLLeg", "TexturedMaterial", "HungrySkin", torso); lLeg->Scale(glm::vec3(0.5, 0.5, 0.5));
-        game::SceneNode* rLeg = CreateInstance("HungryrLeg", "HungryRLeg", "TexturedMaterial", "HungrySkin", torso); rLeg->Scale(glm::vec3(0.5, 0.5, 0.5));
+        game::SceneNode* head = CreateInstance("HungryHead", "HungryHead", "Lit", "HungrySkin"); head->Scale(glm::vec3(0.5, 0.5, 0.5));
+        game::SceneNode* eyes = CreateInstance("HungryEyes", "HungryEyes", "Lit", "HungryEyesText", head); eyes->Scale(glm::vec3(0.5, 0.5, 0.5));
+        game::SceneNode* tongue = CreateInstance("HungryTongue", "HungryTongue", "Lit", "HungryTongueText", head); tongue->Scale(glm::vec3(0.5, 0.5, 0.5));
+        game::SceneNode* torso = CreateInstance("HungryTorso", "HungryTorso", "Lit", "HungrySkin"); torso->Scale(glm::vec3(0.5, 0.5, 0.5));
+        game::SceneNode* lArm = CreateInstance("HungryLArm", "HungryLArm", "Lit", "HungrySkin", torso); lArm->Scale(glm::vec3(0.5, 0.5, 0.5));
+        game::SceneNode* rArm = CreateInstance("HungryRArm", "HungryRArm", "Lit", "HungrySkin", torso); rArm->Scale(glm::vec3(0.5, 0.5, 0.5));
+        game::SceneNode* lLeg = CreateInstance("HungrylLeg", "HungryLLeg", "Lit", "HungrySkin", torso); lLeg->Scale(glm::vec3(0.5, 0.5, 0.5));
+        game::SceneNode* rLeg = CreateInstance("HungryrLeg", "HungryRLeg", "Lit", "HungrySkin", torso); rLeg->Scale(glm::vec3(0.5, 0.5, 0.5));
+
+       
+
+
 
         //!/ Set the position for both the head and torso
         head->SetPosition(glm::vec3(30.0f, 0.0, 30.0f));
@@ -1158,18 +1185,18 @@ namespace game {
         //!/ A wall is of ~6.6 length, and ~1.7 height. - Gabe
 
         //! Entrances
-        game::SceneNode* wallEntrance = CreateInstance("CabinEntrance", "WallDoor", "TexturedMaterial", "TreeBark");
-        game::SceneNode* wallEntrance2 = CreateInstance("CabinEntrance2", "WallDoor", "TexturedMaterial", "TreeBark");
+        game::SceneNode* wallEntrance = CreateInstance("CabinEntrance", "WallDoor", "Lit", "TreeBark");
+        game::SceneNode* wallEntrance2 = CreateInstance("CabinEntrance2", "WallDoor", "Lit", "TreeBark");
 
         //! Roofs
-        game::SceneNode* wallRoof = CreateInstance("WallRoof", "WallRoof", "TexturedMaterial", "TreeBark");
-        game::SceneNode* wallRoof2 = CreateInstance("WallRoof2", "WallRoof", "TexturedMaterial", "TreeBark");
-        game::SceneNode* roofMain = CreateInstance("Roof", "RoofMain", "TexturedMaterial", "TreeBark");
+        game::SceneNode* wallRoof = CreateInstance("WallRoof", "WallRoof", "Lit", "TreeBark");
+        game::SceneNode* wallRoof2 = CreateInstance("WallRoof2", "WallRoof", "Lit", "TreeBark");
+        game::SceneNode* roofMain = CreateInstance("Roof", "RoofMain", "Lit", "TreeBark");
 
         //! Walls and Floors
-        game::SceneNode* wallWindow = CreateInstance("WallWindow", "WallWindow", "TexturedMaterial");
-        game::SceneNode* wallFull = CreateInstance("WallFull", "WallFull", "TexturedMaterial");
-        game::SceneNode* floor = CreateInstance("Floor", "WallFull", "TexturedMaterial");
+        game::SceneNode* wallWindow = CreateInstance("WallWindow", "WallWindow", "Lit");
+        game::SceneNode* wallFull = CreateInstance("WallFull", "WallFull", "Lit");
+        game::SceneNode* floor = CreateInstance("Floor", "WallFull", "Lit");
         
         game::SceneNode* objectiveMarker = CreateInstance("ObjectiveMarker", "SphereParticles", "ObjectiveMaterial", "HungryEyesText");
         objectiveMarker->SetPosition(glm::vec3(location_x, location_y, location_z + 3.3f));
@@ -1215,8 +1242,8 @@ namespace game {
             std::string name = "TreeTrunk" + index;
             std::string name2 = "TreeTop" + index;
 
-            game::SceneNode* treeTrunk = CreateInstance(name, "TreeTrunk", "TexturedMaterial", "TreeBark");
-            game::SceneNode* treeTop = CreateInstance(name2, "TreeTop", "TexturedMaterial", "TreeLeaves");
+            game::SceneNode* treeTrunk = CreateInstance(name, "TreeTrunk", "Lit", "TreeBark");
+            game::SceneNode* treeTop = CreateInstance(name2, "TreeTop", "Lit", "TreeLeaves");
 
             bool locationFound = false;
 
@@ -1252,7 +1279,7 @@ namespace game {
             ss << i;
             std::string index = ss.str();
             std::string name = "Bush" + index;
-            game::SceneNode* bush = CreateInstance(name, "Bush", "TexturedMaterial", "TreeLeaves");
+            game::SceneNode* bush = CreateInstance(name, "Bush", "Lit", "TreeLeaves");
 
             bool locationFound = false;
             while (!locationFound) {
@@ -1288,7 +1315,7 @@ namespace game {
             std::string index = ss.str();
             std::string name = "Mushroom" + index;
 
-            game::SceneNode* mushroom = CreateInstance(name, "Mushroom", "TexturedMaterial", "MushroomTexture");
+            game::SceneNode* mushroom = CreateInstance(name, "Mushroom", "Lit", "MushroomTexture");
 
             bool locationFound = false;
 
@@ -1350,7 +1377,7 @@ namespace game {
             std::string index = ss.str();
             std::string name = "Nail" + index;
 
-            game::SceneNode* nail = CreateInstance(name, "Nail", "TexturedMaterial", "NailTexture");
+            game::SceneNode* nail = CreateInstance(name, "Nail", "Lit", "NailTexture");
 
             bool locationFound = false;
 
