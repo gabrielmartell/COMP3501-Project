@@ -17,13 +17,13 @@ namespace game {
     // Some configuration constants
     // They are written here as global variables, but ideally they should be loaded from a configuration file
 
-    // Main window settings
+    // MAIN WINDOW SETTING
     const std::string window_title_g = "Hungry Man";
     const unsigned int window_width_g = 800;
     const unsigned int window_height_g = 600;
     const bool window_full_screen_g = false;
 
-    // Viewport and camera settings
+    // VIEWPORT AND CAMERA SETTINGS
     float camera_near_clip_distance_g = 0.01;
     float camera_far_clip_distance_g = 1000.0;
     float camera_fov_g = 90.0; // Field-of-view of camera
@@ -32,35 +32,48 @@ namespace game {
     glm::vec3 camera_look_at_g(9.0, 1.0, 0.5);
     glm::vec3 camera_up_g(0.0, 1.0, 0.0);
 
-    //!/ Switching to Arrow Key Movement
+    //!/ ARROW KEY MOVEMENT
     bool upPressed = false;
     bool downPressed = false;
     bool leftPressed = false;
     bool rightPressed = false;
     bool usingMouseCamera = true;
     
-    //!/ Crouching Boolean
+    //!/ CROUCHING VARs
     bool isCrouching = false;
     bool isHidden = false;
+    bool inBush = false;
 
-    //!/ This will control whether UI from IMGUI is on
+    //!/ IMGUI VARs
     bool usingUI = true;
+    bool isDead = false;
     bool game_is_over = false;
+    bool start_screen_on = true;
 
-    //!/ Global map width and height variables
+    //!/ HUNGRY-MAN VARs
+    float hungry_speed = 0.2;
+    glm::vec3 HungryLastPosition;
+
+    //!/ RANDOM VARs
+    std::mt19937 rng;
+    std::uniform_real_distribution<float> dist(0.0f, 360.0f);
+
+    //!/ GLOBAL MAP WIDTH AND LENGTH
     int v_gWidthReal = 50.0;
     int v_gLengthReal = 50.0;
 
-    //!/ Collision detection
+    //!/ PLAYER COLLISION
     // We need a way to move the player back to their last position
     glm::vec3 lastPosition;
     bool inCabin = false;
 
-    // Materials 
+    // ITEM CREATION (ENSURE WHEN NEW COLLECTIBLES ARE PLACED, THEIR NAMES ARE PAIRWISE DISTINCT
+    int indexingOffset = 0;
+
+    // MATERIAL DIRECTORY 
     const std::string material_directory_g = MATERIAL_DIRECTORY;
 
     Game::Game(void) {
-
         // Don't do work in the constructor, leave it for the Init() function
     }
 
@@ -154,21 +167,6 @@ namespace game {
 
     void Game::SetupResources(void) {
 
-        //!/ Create the heightMap
-        //!/ The values can be changed at the top since they're global
-        //!/ I swear there's a good reason
-
-        heightMap = CreateHeightMap(v_gWidthReal, v_gLengthReal, 3.0);
-        //!/ Create geometry of the "Plane"
-        //! This function uses these parameters, Object Name, Height Map, Grid Width, Grid Length, Number of Quads
-        resman_.CreateMapPlane("GameMapMesh", heightMap, 50, 50, 50, 50);
-        printf("    MAP [|]\n");
-
-        // Create geometry of the "wall"
-        resman_.CreateTorus("TorusMesh");
-        resman_.CreateBugParticles("BeeParticles");
-
-
         /*
         ======================
         MATERIALS
@@ -177,20 +175,28 @@ namespace game {
         printf("    MATERIALS [");
         std::string filename = std::string(MATERIAL_DIRECTORY) + std::string("/normal_map");
         resman_.LoadResource(Material, "NormalMapMaterial", filename.c_str());
-        printf("|");
+        printf("=");
 
         // Load material for screen-space effect
         filename = std::string(MATERIAL_DIRECTORY) + std::string("/screen_space");
         resman_.LoadResource(Material, "ScreenSpaceMaterial", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("/textured_material");
         resman_.LoadResource(Material, "TexturedMaterial", filename.c_str());
-        printf("|");
+        printf("=");
+
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("/lit");
+        resman_.LoadResource(Material, "Lit", filename.c_str());
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("/bug_particle");
         resman_.LoadResource(Material, "SwarmMaterial", filename.c_str());
-        printf("|]\n");
+        printf("=");
+
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("/objective_particle");
+        resman_.LoadResource(Material, "ObjectiveMaterial", filename.c_str());
+        printf("=]\n");
 
         /*
         ======================
@@ -201,76 +207,76 @@ namespace game {
         printf("    MESHES [");
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/mushroom.obj");
         resman_.LoadResource(Mesh, "Mushroom", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/nail.obj");
         resman_.LoadResource(Mesh, "Nail", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/treebottom.obj");
         resman_.LoadResource(Mesh, "TreeTrunk", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/treetop.obj");
         resman_.LoadResource(Mesh, "TreeTop", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/bush.obj");
         resman_.LoadResource(Mesh, "Bush", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/wall_door.obj");
         resman_.LoadResource(Mesh, "WallDoor", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/wall_full.obj");
         resman_.LoadResource(Mesh, "WallFull", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/wall_roof.obj");
         resman_.LoadResource(Mesh, "WallRoof", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/wall_window.obj");
         resman_.LoadResource(Mesh, "WallWindow", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/roof_main.obj");
         resman_.LoadResource(Mesh, "RoofMain", filename.c_str());
-        printf("|");
+        printf("=");
 
         // HUNGRY-MAN PARTS
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/hungryhead.obj");
         resman_.LoadResource(Mesh, "HungryHead", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/hungryeyes.obj");
         resman_.LoadResource(Mesh, "HungryEyes", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/hungrytongue.obj");
         resman_.LoadResource(Mesh, "HungryTongue", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/hungrytorso.obj");
         resman_.LoadResource(Mesh, "HungryTorso", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/hungryrightarm.obj");
         resman_.LoadResource(Mesh, "HungryRArm", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/hungryleftarm.obj");
         resman_.LoadResource(Mesh, "HungryLArm", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/hungryrightleg.obj");
         resman_.LoadResource(Mesh, "HungryRLeg", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\models/hungryleftleg.obj");
         resman_.LoadResource(Mesh, "HungryLLeg", filename.c_str());
-        printf("|]\n");
+        printf("=]\n");
 
         /*
         ======================
@@ -280,43 +286,81 @@ namespace game {
         printf("    TEXTURES [");
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/normal_map2.png");
         resman_.LoadResource(Texture, "NormalMap", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/mushroom_text.png");
         resman_.LoadResource(Texture, "MushroomTexture", filename.c_str());
-        printf("|");
+        printf("=");
 
-        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/skybox.jpg");
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/skybox.png");
         resman_.LoadResource(Texture, "Skybox", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/rust.png");
         resman_.LoadResource(Texture, "NailTexture", filename.c_str());
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/bark.png");
         resman_.LoadResource(Texture, "TreeBark", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/grass.png");
         resman_.LoadResource(Texture, "GrassTexture", filename.c_str());
-        printf("|");
+        printf("=");
+
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/bee.png");
+        resman_.LoadResource(Texture, "BeeHUD", filename.c_str());
+        printf("=");
+
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/nail.png");
+        resman_.LoadResource(Texture, "NailHUD", filename.c_str());
+        printf("=");
+
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/mushroom.png");
+        resman_.LoadResource(Texture, "MushroomHUD", filename.c_str());
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/leaves.png");
         resman_.LoadResource(Texture, "TreeLeaves", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/orange.png");
         resman_.LoadResource(Texture, "HungrySkin", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/hungryeyes.png");
         resman_.LoadResource(Texture, "HungryEyesText", filename.c_str());
-        printf("|");
+        printf("=");
 
         filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/pink.png");
         resman_.LoadResource(Texture, "HungryTongueText", filename.c_str());
+        printf("=");
 
-        printf("|]\n");
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/yum.png");
+        resman_.LoadResource(Texture, "Yum", filename.c_str());
+        printf("=");
+
+        filename = std::string(MATERIAL_DIRECTORY) + std::string("\\textures/hungryman.png");
+        resman_.LoadResource(Texture, "HungryManPic", filename.c_str());
+
+        printf("=]\n");
+
+
+        //!/ Create the heightMap
+        //!/ The values can be changed at the top since they're global
+        //!/ I swear there's a good reason
+        printf("    MAP [");
+        heightMap = CreateHeightMap(v_gWidthReal, v_gLengthReal, 3.0);
+
+        //!/ Create geometry of the "Plane"
+        //! This function uses these parameters, Object Name, Height Map, Grid Width, Grid Length, Number of Quads
+        resman_.CreateMapPlane("GameMapMesh", heightMap, 50, 50, 50, 50);
+        printf("=");
+
+        // Create geometry of the "wall"
+        resman_.CreateBugParticles("BeeParticles", 10);
+        resman_.CreateSphereParticles("SphereParticles");
+        printf("=]\n");
+
 
         // Setup drawing to texture
         scene_.SetupDrawToTexture();
@@ -336,12 +380,14 @@ namespace game {
 
         CreateProps(50, 30, cabin_location);
 
+        indexingOffset = 0;
         CreateCollectibles(3, 3, 3, cabin_location);
 
         CreateHungry(hungry_location);
 
+
         // Create an instance of the map
-        //game::SceneNode* map = CreateInstance("MapInstance1", "GameMapMesh", "TexturedMaterial", "TreeLeaves");
+        //game::SceneNode* map = CreateInstance("MapInstance1", "GameMapMesh", "Lit", "TreeLeaves");
         
       /*
         ====================================================
@@ -354,7 +400,7 @@ namespace game {
         game::SceneNode* skyboxLeft = CreateInstance("SkyboxInstance4", "GameMapMesh", "TexturedMaterial", "Skybox");
         game::SceneNode* skyboxRight = CreateInstance("SkyboxInstance5", "GameMapMesh", "TexturedMaterial", "Skybox");
 
-        int skyboxScale = 10;
+        int skyboxScale = 15;
 
         skyboxTop->SetPosition(glm::vec3(-100, 7, -100));
         skyboxTop->SetScale(glm::vec3(skyboxScale, skyboxScale, skyboxScale));
@@ -376,7 +422,11 @@ namespace game {
         skyboxRight->Rotate(glm::angleAxis(glm::radians(-90.0f), glm::vec3(0.0, 0.0, 1.0)));
         
 
-        game::SceneNode* map = CreateInstance("MapInstance1", "GameMapMesh", "TexturedMaterial", "GrassTexture");
+        game::SceneNode* map = CreateInstance("MapInstance1", "GameMapMesh", "Lit", "GrassTexture");
+
+        
+        
+       
 
     }
 
@@ -385,18 +435,14 @@ namespace game {
         float previousVer = 0.0f;
         float horizontalAngle = 0.0f;
         float verticalAngle = 0.0f;
+        
 
         float mouseSpeed = 0.01f;
 
         double xpos, ypos;
-
-        //game::SceneNode* treetrunk1 = CreateInstance("TreeTrunk", "TreeTrunk", "TexturedMaterial", "MushroomTexture");
-
-       // game::SceneNode* mushroom = CreateInstance("Mushroom", "Mushroom", "TexturedMaterial", "MushroomTexture");
-        //mushroom->SetScale(glm::vec3(0.1, 0.1, 0.1));
-
        
         glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+        glClear(GL_COLOR_BUFFER_BIT);
        
         // Loop while the user did not close the window
         while (!glfwWindowShouldClose(window_)) {
@@ -412,7 +458,7 @@ namespace game {
             //printf("x = %.02f, y = %.02f\n", xpos, ypos);
 
             // Animate the scene
-            if (animating_ && !usingUI) {
+            if (animating_ && !isDead && !start_screen_on && !game_is_over) {
                 static double last_time = 0;
                 double current_time = glfwGetTime();
                 if ((current_time - last_time) > 0.01) {
@@ -446,52 +492,113 @@ namespace game {
 
                     //!/ Grab the map instance
                     SceneNode* node = scene_.GetNode("MapInstance1");
-                    //SceneNode* node = scene_.GetNode("CratePlaneInstance1");
-                    //glm::quat rotation = glm::angleAxis(glm::pi<float>() / 180.0f, glm::vec3(0.0, 1.0, 0.0));
-                    //node->Rotate(rotation);
+                    GLuint program1 = node->GetMaterial();
+
+                    
+
+                    GLint CameraPosition1 = glGetUniformLocation(program1, "camera_pos");
+                    glUniform3f(CameraPosition1, camera_.GetPosition().x, camera_.GetPosition().y, camera_.GetPosition().z);
+
+                    GLint LightPosLoc = glGetUniformLocation(program1, "light_position");
+                    glUniform3f(LightPosLoc, camera_.GetPosition().x, camera_.GetPosition().y, camera_.GetPosition().z);
+
+                    GLint MaxDist = glGetUniformLocation(program1, "max_distance");
+                    glUniform1f(MaxDist, 15.0f);
+
+                    
 
                     last_time = current_time;
                 }
             }
 
-            //printf("x = %f, z = %f\n", camera_.GetPosition().x, camera_.GetPosition().z);
-         
-            CollisionDetection();
+            if (isDead) {
+                static double deathTime = current_time;
+                //deathTime += (current_time - last_time);
+                if (current_time - deathTime >= 3.0) { 
+                    game_is_over = true;
+                    usingUI = true;
+                    //printf("We died :(");
+                }
+            }
 
-            // Draw the scene
-            scene_.Draw(&camera_);
-
-           
-
-            //Running these line of code will active the death screen effect
-            //You'll probably need to disable to the draw above as well (if statement or something)
-            //scene_.DrawToTexture(&camera_);
-            //scene_.DisplayTexture(resman_.GetResource("ScreenSpaceMaterial")->GetResource());
-
+            if (!isDead) {
+                // Draw the scene
+                scene_.Draw(&camera_);
+            }
+            else {
+                //Running these line of code will active the death screen effect
+            
+                scene_.DrawToTexture(&camera_);
+                scene_.DisplayTexture(resman_.GetResource("ScreenSpaceMaterial")->GetResource());
+            }
             
             if (usingUI) {
-                //Start UI
-                //Start a new ImGui frame
+
                 ImGui_ImplOpenGL3_NewFrame();
                 ImGui_ImplGlfw_NewFrame();
                 ImGui::NewFrame();
 
-                //Menu Text
-                std::string StartupText = "Welcome to HUNGRY MAN";
-                std::string PressText = "Press Tab to START";
-                ImGui::Text(StartupText.c_str());
-                ImGui::Text(PressText.c_str());
 
+                if (start_screen_on) {
+                    // Menu Text
+                    ImGui::SetNextWindowPos(ImVec2(200, 50));
+                    std::string StartupText = "Welcome to HUNGRY MAN";
+                    std::string PressText = "Press Tab to START";
+                    ImGui::Text(StartupText.c_str());
+                    ImGui::Text(PressText.c_str());
+
+                    // Display image
+                    GLuint texture_id = resman_.GetResource("Yum")->GetResource();
+                    ImGui::Image((void*)(intptr_t)texture_id, ImVec2(300, 300));
+                    
+                }
+
+                if (!start_screen_on) {
+                    // Image without background
+                    int img_dim = 100;
+
+                    if (gameScore.x >= 1 && !isDead) {
+                        ImGui::SetNextWindowPos(ImVec2(0, 0));
+                        ImGui::SetNextWindowSize(ImVec2(img_dim, img_dim));
+                        ImGui::Begin("ImageWindow3", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground);
+                        GLuint texture_id = resman_.GetResource("MushroomHUD")->GetResource();
+                        ImGui::Image((void*)(intptr_t)texture_id, ImVec2(img_dim, img_dim));
+                        ImGui::End(); // Close the ImageWindow
+                    }
+
+                    if (gameScore.y >= 1 && !isDead) {
+                        ImGui::SetNextWindowPos(ImVec2(125, 0));
+                        ImGui::SetNextWindowSize(ImVec2(img_dim, img_dim));
+                        ImGui::Begin("ImageWindow", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground);
+                        GLuint texture_id = resman_.GetResource("BeeHUD")->GetResource();
+                        ImGui::Image((void*)(intptr_t)texture_id, ImVec2(img_dim, img_dim));
+                        ImGui::End(); // Close the ImageWindow
+                    }
+
+                    if (gameScore.z >= 1 && !isDead) {
+                        ImGui::SetNextWindowPos(ImVec2(250, 0));
+                        ImGui::SetNextWindowSize(ImVec2(img_dim, img_dim));
+                        ImGui::Begin("ImageWindow2", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground);
+                        GLuint texture_id = resman_.GetResource("NailHUD")->GetResource();
+                        ImGui::Image((void*)(intptr_t)texture_id, ImVec2(img_dim, img_dim));
+                        ImGui::End(); // Close the ImageWindow
+                    }
+                }
+                
                 if (game_is_over) {
-                    ImGui::EndFrame();
-                    ImGui::NewFrame();
+                    // Display game over text and image
                     ImGui::Text("Game Over!");
-                    //Handle anything else in here later
+                    GLuint texture_id = resman_.GetResource("HungryManPic")->GetResource();
+                    ImGui::Image((void*)(intptr_t)texture_id, ImVec2(300, 300));
+
+                    // Display score
+                    std::string scoreText = "Your score was " + std::to_string((int)gameScore.w);
+                    ImGui::Text(scoreText.c_str());
+                    ImGui::Text("Press Q to Quit");
                 }
 
                 //You can just call Text again to add more text to the GUI
                 //ImGui::Text(text.c_str());
-
 
                 //Render the ImGui frame
                 ImGui::Render();
@@ -499,7 +606,7 @@ namespace game {
                 glfwGetFramebufferSize(window_, &display_w, &display_h);
                 glViewport(0, 0, display_w, display_h);
                 glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-                glClear(GL_COLOR_BUFFER_BIT);
+                
                 ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
                 glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
                 
@@ -513,23 +620,50 @@ namespace game {
             // Update other events like input handling
             glfwPollEvents();
 
-            horizontalAngle = 0.0f;
-            // vertical angle : 0, look at the horizon
-            verticalAngle = 0.0f;
-
+            if (!isDead) {
+                horizontalAngle = 0.0f;
+                verticalAngle = 0.0f;
+            }
+            
         }
     }
 
     void Game::EnemyMovement(float dt) {
         SceneNode* head = scene_.GetNode("HungryHead");
         SceneNode* torso = scene_.GetNode("HungryTorso");
-        
+        SceneNode* eyes = scene_.GetNode("HungryEyes");
+
+        //Time Variables
+        double current_time = glfwGetTime();
+        double changeDirectionInterval = 5.0f; // Time in seconds to change direction
+        static double directionChangeTimer = current_time; // Timer for direction change
+        // Initial patrol direction
+        static glm::vec3 patrolDirection = glm::vec3(cos(glm::radians(dist(rng))), 0.0f, sin(glm::radians(dist(rng))));
+
         //!/ PATROL state
         if (head->GetState() == 1 || inCabin) {
-            float spottingRadius = 5.0f;
+            float spottingRadius = 9.0; 
+            
+            if (isCrouching) { spottingRadius = 5.0f; }
+            else { spottingRadius = 9.0f; }
 
+            HungryLastPosition = head->GetPosition();
             glm::vec3 hungryPosition = head->GetPosition();
-            glm::vec3 direction = glm::vec3(25.0, 0.0, 30.0) - head->GetPosition();
+
+            
+            if (current_time - directionChangeTimer >= changeDirectionInterval) {
+                //New angle should generally be +90 from last
+                float newAngle = glm::radians(dist(rng)) + glm::radians(90.0f);
+                patrolDirection = glm::vec3(cos(newAngle), 0.0f, sin(newAngle));
+                directionChangeTimer = current_time;
+            }
+
+            //!/ Calculate the yaw angle for the current patrol direction
+            float yaw = std::atan2(patrolDirection.z, patrolDirection.x);
+
+            //!/ Set the head and torso orientation
+            head->SetOrientation(glm::angleAxis(yaw - glm::radians(90.0f), glm::vec3(0, -1, 0)));
+            torso->SetOrientation(glm::angleAxis(yaw - glm::radians(90.0f), glm::vec3(0, -1, 0)));
 
             //!/ Calculation and Offset for Hungry
             float newY = 3 * cos((M_PI / fabs(50 * 2 / 3)) * hungryPosition.x);
@@ -545,21 +679,23 @@ namespace game {
             head->SetPosition(hungryPosition);
             torso->SetPosition(hungryPosition);
 
-            direction.y = 0.0f;
-            direction.x *= (0.2f * dt);
-            direction.z *= (0.2f * dt);
+            patrolDirection.y = 0.0f; //Ensure no Y movement
+            glm::vec3 movement = patrolDirection * (hungry_speed * dt); 
 
-            head->Translate(direction);
-            torso->Translate(direction);
+            head->Translate(movement);
+            torso->Translate(movement);
+            hungryPosition = head->GetPosition();
 
+            if (hungryPosition.x > 49.0f || hungryPosition.x < 1.0f || hungryPosition.z > 49.0f || hungryPosition.z < 1.0f) {
+                camera_.SetPosition(HungryLastPosition);
+            }
             if ((glm::distance(camera_.GetPosition(), hungryPosition) < spottingRadius && isHidden == false) && !inCabin) {
-                head->SetEnemyState(2);
+                head->SetEnemyState(2);            
             }
         }
 
         //!/ CHASE state
         else if (head->GetState() == 2) {
-            
             //!/ Radius and direction variables
             float chaseRadius = 5.0f;
             glm::vec3 direction = camera_.GetPosition() - head->GetPosition();
@@ -575,7 +711,6 @@ namespace game {
             //!/ Set the head and torso orientation
             head->SetOrientation(glm::angleAxis(yaw - glm::radians(90.0f), glm::vec3(0, -1, 0)));
             torso->SetOrientation(glm::angleAxis(yaw - glm::radians(90.0f), glm::vec3(0, -1, 0)));
-
 
             //!/ Grab the position
             glm::vec3 hungryPosition = head->GetPosition();
@@ -598,8 +733,8 @@ namespace game {
                 torso->SetPosition(hungryPosition);
 
                 direction.y = 0.0f;
-                direction.x *= (0.2f * dt);
-                direction.z *= (0.2f * dt);
+                direction.x *= (hungry_speed * dt);
+                direction.z *= (hungry_speed * dt);
 
                 head->Translate(direction);
                 torso->Translate(direction);
@@ -620,7 +755,16 @@ namespace game {
 
         //!/ Determine current player position
         glm::vec3 playerPosition = camera_.GetPosition();
+
+        //!/ Determine current hungryman position
+        SceneNode* head = scene_.GetNode("HungryHead");
+        glm::vec3 hungryPosition = head->GetPosition();
+
         
+        if (playerPosition.x > 49.0f || playerPosition.x < 1.0f || playerPosition.z > 49.0f || playerPosition.z < 1.0f) {
+            camera_.SetPosition(lastPosition);
+        }
+
         //!/ Grabbing wall properties and cabin positions 
         SceneNode* cabinDoor = scene_.GetNode("CabinEntrance");
         glm::vec3 wallStart = cabinDoor->GetPosition();
@@ -669,6 +813,10 @@ namespace game {
 
                 float objRadius = 1.0f; //Needs to be changed per object
 
+                if ((hungryPosition.x > wallStart.x && hungryPosition.x < wallEnd.x) && (hungryPosition.z > wallStart.z && hungryPosition.z < wallEnd.z)) {
+                    head->SetPosition(HungryLastPosition);
+                }
+
                 if ( (playerPosition.x > wallStart.x && playerPosition.x < wallEnd.x) && (playerPosition.z > wallStart.z && playerPosition.z < wallEnd.z)) {
                     camera_.SetPosition(lastPosition); //Reset player position
                     break;
@@ -697,6 +845,10 @@ namespace game {
 
                 float objRadius = 1.0f; //Needs to be changed per object
 
+                if ((hungryPosition.x > wallStart.x && hungryPosition.x < wallEnd.x + 1.65) && (hungryPosition.z > wallStart.z && hungryPosition.z < wallEnd.z)) {
+                    head->SetPosition(HungryLastPosition);
+                }
+
                 if ( ( (playerPosition.x > wallStart.x && playerPosition.x < wallEnd.x) || (playerPosition.x > wallFrameStart.x && playerPosition.x < wallFrameEnd.x)) && (playerPosition.z > wallStart.z && playerPosition.z < wallEnd.z)) {
                     camera_.SetPosition(lastPosition); //Reset player position
                     break;
@@ -706,13 +858,14 @@ namespace game {
             //!/ Hiding mechanic
             // Collision for Bushes
             if ((currentObj->GetName()).find("Bush") != std::string::npos) {
-
+                
                 glm::vec3 objPosition = currentObj->GetPosition();
                 objPosition.y = heightMap[(int)(playerPosition.z + (playerPosition.x * 50))];
                 float objRadius = 1.0f; //Needs to be changed per object
 
                 if (glm::distance(playerPosition, objPosition) < objRadius) {
                     //!/ Check if the player is crouching
+                    inBush = true;
                     if (isCrouching) {
                         isHidden = true;
                     }
@@ -730,6 +883,8 @@ namespace game {
                 float objRadius = 1.0f;
 
                 if (glm::distance(playerPosition, objPosition) < objRadius) {
+                    //printf("[UPDATE] Mushroom Collected\n");
+
                     if (gameScore.x == 0) {
                         gameScore.x += 1;
                         scene_.RemoveNode(currentObj->GetName());
@@ -739,28 +894,51 @@ namespace game {
 
             // Collision for Bees
             if ((currentObj->GetName()).find("Bees") != std::string::npos) {
-                /*glm::vec3 objPosition = currentObj->GetPosition();
-                objPosition.y = heightMap[(int)(playerPosition.z + (playerPosition.x * 50))];
-                float objRadius = 0.8f;
+                glm::vec3 objPosition = currentObj->GetPosition();
+                objPosition.y = (heightMap[(int)(playerPosition.z + (playerPosition.x * 50))]) - 1;
+                float objRadius = 2;
 
+                //printf("%f\n", glm::distance(playerPosition, objPosition));
                 if (glm::distance(playerPosition, objPosition) < objRadius) {
+                    //printf("[UPDATE] Bee Collected\n");
                     if (gameScore.y == 0) {
                         gameScore.y += 1;
                         scene_.RemoveNode(currentObj->GetName());
                     }
-                }*/
+                }
             }
 
             // Collision for Nail
             if ((currentObj->GetName()).find("Nail") != std::string::npos) {
                 glm::vec3 objPosition = currentObj->GetPosition();
-                objPosition.y = heightMap[(int)(playerPosition.z + (playerPosition.x * 50))];
+                objPosition.y = heightMap[(int)(playerPosition.z + (playerPosition.x * 50))] + 1;
                 float objRadius = 0.8f;
 
                 if (glm::distance(playerPosition, objPosition) < objRadius) {
+                    //printf("[UPDATE] Nail Collected\n");
+
                     if (gameScore.z == 0) {
                         gameScore.z += 1;
                         scene_.RemoveNode(currentObj->GetName());
+                    }
+                }
+            }
+
+            // Collision for Objective Marker
+            if ((currentObj->GetName()).find("ObjectiveMarker") != std::string::npos) {
+                glm::vec3 objPosition = currentObj->GetPosition();
+                objPosition.y = heightMap[(int)(playerPosition.z + (playerPosition.x * 50))] + 1;
+                float objRadius = 1.0f;
+
+                if (glm::distance(playerPosition, objPosition) < objRadius) {
+
+                    if (gameScore.x == 1 && gameScore.y == 1 && gameScore.z == 1) {
+                        gameScore.x--; gameScore.y--; gameScore.z--;
+                        gameScore.w++;
+
+                        hungry_speed += 0.2f;
+                        std::cout << "CANDY (" << (int)gameScore.w << ")" << std::endl;
+                        CreateCollectibles(1, 1, 1, glm::vec3(10.0, 3.0, 25.0));
                     }
                 }
             }
@@ -769,15 +947,20 @@ namespace game {
             // Collision for Hungry Man
             if ((currentObj->GetName()).find("HungryTorso") != std::string::npos) {
                 glm::vec3 objPosition = currentObj->GetPosition();
-                objPosition.y = heightMap[(int)(playerPosition.z + (playerPosition.x * 50))];
-                float objRadius = 0.8f;
+                objPosition.y = heightMap[(int)(playerPosition.z + (playerPosition.x * 50))] - 1;
+                float objRadius = 2.0f;
 
+                //printf("%f\n", glm::distance(playerPosition, objPosition));
                 if (glm::distance(playerPosition, objPosition) < objRadius) {
-                    std::cout << "I got you!" << std::endl;
+                    //std::cout << "I got you!" << std::endl;
+                    isDead = true;
                 }
             }
 
         }
+
+        if (!inBush) { isHidden = false; }
+        inBush = false;
     }
 
     void Game::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -814,8 +997,7 @@ namespace game {
         }
 
         //!/ WASD movment
-        if (key == GLFW_KEY_W) {
-
+        if (key == GLFW_KEY_W && !isDead && !start_screen_on) {
             //Last position snippet
             lastPosition = game->camera_.GetPosition();
 
@@ -833,7 +1015,7 @@ namespace game {
             }
             
         }
-        if (key == GLFW_KEY_S) {
+        if (key == GLFW_KEY_S && !isDead && !start_screen_on) {
             //Last position snippet
             lastPosition = game->camera_.GetPosition();
 
@@ -851,7 +1033,7 @@ namespace game {
             }
             
         }
-        if (key == GLFW_KEY_A) {
+        if (key == GLFW_KEY_A && !isDead && !start_screen_on) {
             //Last position snippet
             lastPosition = game->camera_.GetPosition();
 
@@ -869,7 +1051,7 @@ namespace game {
             }
         }
 
-        if (key == GLFW_KEY_D) {
+        if (key == GLFW_KEY_D && !isDead && !start_screen_on) {
             //Last position snippet
             lastPosition = game->camera_.GetPosition();
 
@@ -943,7 +1125,7 @@ namespace game {
 
         //!/ Tab will allow the game to start
         if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
-            usingUI = false;
+            start_screen_on = false;
         }
 
     }
@@ -965,16 +1147,22 @@ namespace game {
     //!/ This function creates the enemy
     //! It takes the location designated for the enemy
     void Game::CreateHungry(glm::vec3 location) {
+
+
         
         //!/ Make all limbs of hungry man
-        game::SceneNode* head = CreateInstance("HungryHead", "HungryHead", "TexturedMaterial", "HungrySkin"); head->Scale(glm::vec3(0.5, 0.5, 0.5));
-        game::SceneNode* eyes = CreateInstance("HungryEyes", "HungryEyes", "TexturedMaterial", "HungryEyesText", head); eyes->Scale(glm::vec3(0.5, 0.5, 0.5));
-        game::SceneNode* tongue = CreateInstance("HungryTongue", "HungryTongue", "TexturedMaterial", "HungryTongueText", head); tongue->Scale(glm::vec3(0.5, 0.5, 0.5));
-        game::SceneNode* torso = CreateInstance("HungryTorso", "HungryTorso", "TexturedMaterial", "HungrySkin"); torso->Scale(glm::vec3(0.5, 0.5, 0.5));
-        game::SceneNode* lArm = CreateInstance("HungryLArm", "HungryLArm", "TexturedMaterial", "HungrySkin", torso); lArm->Scale(glm::vec3(0.5, 0.5, 0.5));
-        game::SceneNode* rArm = CreateInstance("HungryRArm", "HungryRArm", "TexturedMaterial", "HungrySkin", torso); rArm->Scale(glm::vec3(0.5, 0.5, 0.5));
-        game::SceneNode* lLeg = CreateInstance("HungrylLeg", "HungryLLeg", "TexturedMaterial", "HungrySkin", torso); lLeg->Scale(glm::vec3(0.5, 0.5, 0.5));
-        game::SceneNode* rLeg = CreateInstance("HungryrLeg", "HungryRLeg", "TexturedMaterial", "HungrySkin", torso); rLeg->Scale(glm::vec3(0.5, 0.5, 0.5));
+        game::SceneNode* head = CreateInstance("HungryHead", "HungryHead", "Lit", "HungrySkin"); head->Scale(glm::vec3(0.5, 0.5, 0.5));
+        game::SceneNode* eyes = CreateInstance("HungryEyes", "HungryEyes", "Lit", "HungryEyesText", head); eyes->Scale(glm::vec3(0.5, 0.5, 0.5));
+        game::SceneNode* tongue = CreateInstance("HungryTongue", "HungryTongue", "Lit", "HungryTongueText", head); tongue->Scale(glm::vec3(0.5, 0.5, 0.5));
+        game::SceneNode* torso = CreateInstance("HungryTorso", "HungryTorso", "Lit", "HungrySkin"); torso->Scale(glm::vec3(0.5, 0.5, 0.5));
+        game::SceneNode* lArm = CreateInstance("HungryLArm", "HungryLArm", "Lit", "HungrySkin", torso); lArm->Scale(glm::vec3(0.5, 0.5, 0.5));
+        game::SceneNode* rArm = CreateInstance("HungryRArm", "HungryRArm", "Lit", "HungrySkin", torso); rArm->Scale(glm::vec3(0.5, 0.5, 0.5));
+        game::SceneNode* lLeg = CreateInstance("HungrylLeg", "HungryLLeg", "Lit", "HungrySkin", torso); lLeg->Scale(glm::vec3(0.5, 0.5, 0.5));
+        game::SceneNode* rLeg = CreateInstance("HungryrLeg", "HungryRLeg", "Lit", "HungrySkin", torso); rLeg->Scale(glm::vec3(0.5, 0.5, 0.5));
+
+       
+
+
 
         //!/ Set the position for both the head and torso
         head->SetPosition(glm::vec3(30.0f, 0.0, 30.0f));
@@ -997,19 +1185,21 @@ namespace game {
         //!/ A wall is of ~6.6 length, and ~1.7 height. - Gabe
 
         //! Entrances
-        game::SceneNode* wallEntrance = CreateInstance("CabinEntrance", "WallDoor", "TexturedMaterial", "TreeBark");
-        game::SceneNode* wallEntrance2 = CreateInstance("CabinEntrance2", "WallDoor", "TexturedMaterial", "TreeBark");
+        game::SceneNode* wallEntrance = CreateInstance("CabinEntrance", "WallDoor", "Lit", "TreeBark");
+        game::SceneNode* wallEntrance2 = CreateInstance("CabinEntrance2", "WallDoor", "Lit", "TreeBark");
 
         //! Roofs
-        game::SceneNode* wallRoof = CreateInstance("WallRoof", "WallRoof", "TexturedMaterial", "TreeBark");
-        game::SceneNode* wallRoof2 = CreateInstance("WallRoof2", "WallRoof", "TexturedMaterial", "TreeBark");
-        game::SceneNode* roofMain = CreateInstance("Roof", "RoofMain", "TexturedMaterial", "TreeBark");
+        game::SceneNode* wallRoof = CreateInstance("WallRoof", "WallRoof", "Lit", "TreeBark");
+        game::SceneNode* wallRoof2 = CreateInstance("WallRoof2", "WallRoof", "Lit", "TreeBark");
+        game::SceneNode* roofMain = CreateInstance("Roof", "RoofMain", "Lit", "TreeBark");
 
         //! Walls and Floors
-        game::SceneNode* wallWindow = CreateInstance("WallWindow", "WallWindow", "TexturedMaterial");
-        game::SceneNode* wallFull = CreateInstance("WallFull", "WallFull", "TexturedMaterial");
-        game::SceneNode* floor = CreateInstance("Floor", "WallFull", "TexturedMaterial");
-
+        game::SceneNode* wallWindow = CreateInstance("WallWindow", "WallWindow", "Lit");
+        game::SceneNode* wallFull = CreateInstance("WallFull", "WallFull", "Lit");
+        game::SceneNode* floor = CreateInstance("Floor", "WallFull", "Lit");
+        
+        game::SceneNode* objectiveMarker = CreateInstance("ObjectiveMarker", "SphereParticles", "ObjectiveMaterial", "HungryEyesText");
+        objectiveMarker->SetPosition(glm::vec3(location_x, location_y, location_z + 3.3f));
 
         wallEntrance->SetPosition(glm::vec3(location_x, location_y, location_z));
         wallEntrance->SetScale(glm::vec3(0.5, 0.5, 0.5));
@@ -1052,8 +1242,8 @@ namespace game {
             std::string name = "TreeTrunk" + index;
             std::string name2 = "TreeTop" + index;
 
-            game::SceneNode* treeTrunk = CreateInstance(name, "TreeTrunk", "TexturedMaterial", "TreeBark");
-            game::SceneNode* treeTop = CreateInstance(name2, "TreeTop", "TexturedMaterial", "TreeLeaves");
+            game::SceneNode* treeTrunk = CreateInstance(name, "TreeTrunk", "Lit", "TreeBark");
+            game::SceneNode* treeTop = CreateInstance(name2, "TreeTop", "Lit", "TreeLeaves");
 
             bool locationFound = false;
 
@@ -1089,7 +1279,7 @@ namespace game {
             ss << i;
             std::string index = ss.str();
             std::string name = "Bush" + index;
-            game::SceneNode* bush = CreateInstance(name, "Bush", "TexturedMaterial", "TreeLeaves");
+            game::SceneNode* bush = CreateInstance(name, "Bush", "Lit", "TreeLeaves");
 
             bool locationFound = false;
             while (!locationFound) {
@@ -1119,12 +1309,13 @@ namespace game {
 
         //!/ MUSHROOM CREATION
         for (int i = 0; i < mushNum; ++i) {
+            int offset = i + indexingOffset;
             std::stringstream ss;
-            ss << i;
+            ss << offset;
             std::string index = ss.str();
             std::string name = "Mushroom" + index;
 
-            game::SceneNode* mushroom = CreateInstance(name, "Mushroom", "TexturedMaterial", "MushroomTexture");
+            game::SceneNode* mushroom = CreateInstance(name, "Mushroom", "Lit", "MushroomTexture");
 
             bool locationFound = false;
 
@@ -1152,10 +1343,11 @@ namespace game {
 
         //!/ BEE CREATION
         for (int i = 0; i < beeNum; ++i) {
+            int offset = i + indexingOffset;
             std::stringstream ss;
             ss << i;
             std::string index = ss.str();
-            std::string name = "Bee" + index;
+            std::string name = "Bees" + index;
 
             game::SceneNode* bee = CreateInstance(name, "BeeParticles", "SwarmMaterial");
             bool locationFound = false;
@@ -1179,12 +1371,13 @@ namespace game {
 
         //!/ NAIL CREATION
         for (int i = 0; i < nailNum; ++i) {
+            int offset = i + indexingOffset;
             std::stringstream ss;
             ss << i;
             std::string index = ss.str();
             std::string name = "Nail" + index;
 
-            game::SceneNode* nail = CreateInstance(name, "Nail", "TexturedMaterial", "NailTexture");
+            game::SceneNode* nail = CreateInstance(name, "Nail", "Lit", "NailTexture");
 
             bool locationFound = false;
 
@@ -1210,6 +1403,7 @@ namespace game {
                 }
             }
         }
+        indexingOffset += nailNum;
     }
 
     // CreateInstance function
